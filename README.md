@@ -1,7 +1,17 @@
-# Tauri + React + Typescript
+# Smile
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+A Tauri-based camera app for Linux.
 
-## Recommended IDE Setup
+## Development
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+Work in progress.
+
+## Build
+
+```bash
+npm run tauri build
+```
+
+## Credits
+
+Developed by [khurram bhutto](https://github.com/khurrambhutto)
