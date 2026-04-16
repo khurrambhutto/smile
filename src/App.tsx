@@ -9,49 +9,33 @@ type CameraInfo = {
   path: string;
 };
 
-type CameraFramePayload = {
-  dataUrl: string;
-  width: number;
-  height: number;
-  pixelFormat: string;
-  sequence: number;
-};
-
 type CameraStatusPayload = {
   state: string;
   message: string;
 };
 
-const CAMERA_FRAME_EVENT = "camera-frame";
 const CAMERA_STATUS_EVENT = "camera-status";
+const RECONNECT_DELAY_MS = 750;
 
 function App() {
   const [, setCameras] = useState<CameraInfo[]>([]);
   const [, setSelectedCameraId] = useState("");
-  const [previewSrc, setPreviewSrc] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewToken, setPreviewToken] = useState(0);
   const [status, setStatus] = useState("Starting camera…");
   const [statusState, setStatusState] = useState("starting");
   const [error, setError] = useState("");
-  const [, setIsRunning] = useState(false);
-  const [, setFrameInfo] = useState<CameraFramePayload | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+
   const autoStartedRef = useRef(false);
+  const reconnectTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    let unlistenFrame: UnlistenFn | null = null;
     let unlistenStatus: UnlistenFn | null = null;
 
     const setup = async () => {
       try {
-        unlistenFrame = await listen<CameraFramePayload>(
-          CAMERA_FRAME_EVENT,
-          (event) => {
-            if (!mounted) return;
-            setPreviewSrc(event.payload.dataUrl);
-            setFrameInfo(event.payload);
-          },
-        );
-
         unlistenStatus = await listen<CameraStatusPayload>(
           CAMERA_STATUS_EVENT,
           (event) => {
@@ -66,8 +50,6 @@ function App() {
               setError("");
             } else if (state === "error") {
               setIsRunning(false);
-              setPreviewSrc("");
-              setFrameInfo(null);
               setError(message);
             } else if (state === "stopped") {
               setIsRunning(false);
@@ -75,11 +57,14 @@ function App() {
           },
         );
 
+        const url = await invoke<string>("get_preview_url");
+        if (!mounted) return;
+        setPreviewUrl(url);
+
         const found = await invoke<CameraInfo[]>("list_cameras");
         if (!mounted) return;
 
         setCameras(found);
-
         const firstCameraId = found[0]?.id ?? "";
         setSelectedCameraId(firstCameraId);
 
@@ -105,8 +90,11 @@ function App() {
 
     return () => {
       mounted = false;
-      if (unlistenFrame) void unlistenFrame();
       if (unlistenStatus) void unlistenStatus();
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -115,8 +103,6 @@ function App() {
       setError("");
       setStatus("Starting camera…");
       setStatusState("starting");
-      setPreviewSrc("");
-      setFrameInfo(null);
 
       const updated = await invoke<CameraInfo[]>("start_camera", {
         request: {
@@ -141,7 +127,23 @@ function App() {
     }
   }
 
-  const showOverlay = !previewSrc;
+  // The preview server serves multipart/x-mixed-replace, but if the camera
+  // never produced a frame (e.g. device error, permission denied) the
+  // browser will eventually give up on the <img>. Re-mount the element on
+  // error to reconnect once the camera recovers.
+  function handlePreviewError() {
+    if (reconnectTimerRef.current !== null) return;
+    reconnectTimerRef.current = window.setTimeout(() => {
+      reconnectTimerRef.current = null;
+      setPreviewToken((token) => token + 1);
+    }, RECONNECT_DELAY_MS);
+  }
+
+  const previewSrc = previewUrl
+    ? `${previewUrl}?t=${previewToken}`
+    : "";
+
+  const showOverlay = !isRunning;
 
   return (
     <main className="camera-app">
@@ -151,6 +153,7 @@ function App() {
             className="camera-feed"
             src={previewSrc}
             alt="Live camera preview"
+            onError={handlePreviewError}
           />
         ) : (
           <div className="camera-feed camera-feed-placeholder" />
