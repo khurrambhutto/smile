@@ -230,117 +230,41 @@ fn camera_worker(
     requested_fps: u32,
     stop_flag: Arc<AtomicBool>,
 ) -> Result<(), String> {
-    eprintln!(
-        "[camera] worker starting path={} requested={}x{}@{}fps",
-        path, requested_width, requested_height, requested_fps
-    );
-
     let dev =
         Device::with_path(&path).map_err(|error| format!("Failed to open {}: {}", path, error))?;
-    eprintln!("[camera] device opened path={}", path);
 
     let mut fmt = dev
         .format()
         .map_err(|error| format!("Failed to read camera format: {}", error))?;
-    eprintln!(
-        "[camera] initial format width={} height={} fourcc={}",
-        fmt.width,
-        fmt.height,
-        fmt.fourcc
-            .str()
-            .map(|value| value.to_string())
-            .unwrap_or_else(|_| "UNKNOWN".to_string())
-    );
 
     fmt.width = requested_width;
     fmt.height = requested_height;
     fmt.fourcc = FourCC::new(b"MJPG");
-    eprintln!(
-        "[camera] trying format width={} height={} fourcc=MJPG",
-        fmt.width, fmt.height
-    );
 
     let actual_fmt = match dev.set_format(&fmt) {
-        Ok(format) => {
-            eprintln!(
-                "[camera] format accepted width={} height={} fourcc={}",
-                format.width,
-                format.height,
-                format
-                    .fourcc
-                    .str()
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|_| "UNKNOWN".to_string())
-            );
-            format
-        }
-        Err(error) => {
-            eprintln!("[camera] MJPG format failed: {}", error);
-
+        Ok(format) => format,
+        Err(_) => {
             let mut fallback = dev
                 .format()
                 .map_err(|error| format!("Failed to read camera format: {}", error))?;
-            eprintln!(
-                "[camera] fallback base format width={} height={} fourcc={}",
-                fallback.width,
-                fallback.height,
-                fallback
-                    .fourcc
-                    .str()
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|_| "UNKNOWN".to_string())
-            );
 
             fallback.width = requested_width;
             fallback.height = requested_height;
             fallback.fourcc = FourCC::new(b"YUYV");
-            eprintln!(
-                "[camera] trying fallback format width={} height={} fourcc=YUYV",
-                fallback.width, fallback.height
-            );
 
-            let format = dev
-                .set_format(&fallback)
-                .map_err(|error| format!("Failed to configure camera: {}", error))?;
-
-            eprintln!(
-                "[camera] fallback format accepted width={} height={} fourcc={}",
-                format.width,
-                format.height,
-                format
-                    .fourcc
-                    .str()
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|_| "UNKNOWN".to_string())
-            );
-
-            format
+            dev.set_format(&fallback)
+                .map_err(|error| format!("Failed to configure camera: {}", error))?
         }
     };
 
     let params = CaptureParameters::with_fps(requested_fps);
-    match dev.set_params(&params) {
-        Ok(actual_params) => {
-            eprintln!(
-                "[camera] stream params set interval={}/{}",
-                actual_params.interval.numerator, actual_params.interval.denominator
-            );
-        }
-        Err(error) => {
-            eprintln!("[camera] failed to set params: {}", error);
-        }
-    }
+    let _ = dev.set_params(&params);
 
     let pixel_format = actual_fmt
         .fourcc
         .str()
         .map(|value| value.to_string())
         .unwrap_or_else(|_| "UNKNOWN".to_string());
-
-    eprintln!(
-        "[camera] starting stream width={} height={} fourcc={}",
-        actual_fmt.width, actual_fmt.height, pixel_format
-    );
 
     emit_status(
         &app,
@@ -354,51 +278,26 @@ fn camera_worker(
     let mut stream = MmapStream::with_buffers(&dev, Type::VideoCapture, STREAM_BUFFER_COUNT)
         .map_err(|error| format!("Failed to create capture stream: {}", error))?;
     stream.set_timeout(Duration::from_millis(FIRST_FRAME_TIMEOUT_MS));
-    eprintln!(
-        "[camera] mmap stream ready buffers={} first_frame_timeout_ms={} stream_timeout_ms={}",
-        STREAM_BUFFER_COUNT, FIRST_FRAME_TIMEOUT_MS, STREAM_TIMEOUT_MS
-    );
 
     let mut last_emit = Instant::now()
         .checked_sub(Duration::from_millis(PREVIEW_FRAME_INTERVAL_MS))
         .unwrap_or_else(Instant::now);
-    let mut frame_count: u64 = 0;
-    let mut emitted_count: u64 = 0;
-
     {
         let (first_buf, first_meta) = match stream.next() {
-            Ok(frame) => {
-                eprintln!("[camera] first frame received during warmup");
-                frame
-            }
+            Ok(frame) => frame,
             Err(error) if error.kind() == std::io::ErrorKind::TimedOut => {
-                eprintln!(
-                    "[camera] first frame warmup timed out after {}ms",
-                    FIRST_FRAME_TIMEOUT_MS
-                );
                 return Err(format!(
                     "Camera did not produce a first frame within {} ms",
                     FIRST_FRAME_TIMEOUT_MS
                 ));
             }
             Err(error) => {
-                eprintln!("[camera] first frame warmup failed: {}", error);
                 return Err(format!("Failed to capture first frame: {}", error));
             }
         };
 
-        frame_count += 1;
-
         let used = usize::try_from(first_meta.bytesused)
             .map_err(|_| "Failed to read first frame size".to_string())?;
-        eprintln!(
-            "[camera] frame seq={} count={} bytesused={} buffer_len={} flags={:?}",
-            first_meta.sequence,
-            frame_count,
-            used,
-            first_buf.len(),
-            first_meta.flags
-        );
 
         if used > 0 && used <= first_buf.len() {
             let frame = &first_buf[..used];
@@ -408,13 +307,7 @@ fn camera_worker(
                 actual_fmt.height,
                 actual_fmt.fourcc,
             )
-            .map_err(|error| {
-                eprintln!(
-                    "[camera] encode failed seq={} count={} bytesused={} fourcc={}: {}",
-                    first_meta.sequence, frame_count, used, pixel_format, error
-                );
-                format!("Failed to encode preview frame: {}", error)
-            })?;
+            .map_err(|error| format!("Failed to encode preview frame: {}", error))?;
 
             let payload = CameraFramePayload {
                 data_url,
@@ -424,28 +317,11 @@ fn camera_worker(
                 sequence: first_meta.sequence,
             };
 
-            emitted_count += 1;
-            eprintln!(
-                "[camera] emitting preview seq={} emitted={} payload_format={}",
-                first_meta.sequence, emitted_count, pixel_format
-            );
-
             if let Err(error) = app.emit(CAMERA_FRAME_EVENT, &payload) {
-                eprintln!(
-                    "[camera] emit failed seq={} emitted={}: {}",
-                    first_meta.sequence, emitted_count, error
-                );
                 return Err(format!("Failed to emit frame event: {}", error));
             }
 
             last_emit = Instant::now();
-        } else {
-            eprintln!(
-                "[camera] skipping invalid first frame seq={} bytesused={} buffer_len={}",
-                first_meta.sequence,
-                used,
-                first_buf.len()
-            );
         }
     }
 
@@ -453,50 +329,21 @@ fn camera_worker(
 
     loop {
         if stop_flag.load(Ordering::Relaxed) {
-            eprintln!(
-                "[camera] stop requested after frames={} emitted={}",
-                frame_count, emitted_count
-            );
             break;
         }
 
         let (buf, meta) = match stream.next() {
             Ok(frame) => frame,
-            Err(error) if error.kind() == std::io::ErrorKind::TimedOut => {
-                eprintln!("[camera] stream timeout waiting for next frame");
-                continue;
-            }
+            Err(error) if error.kind() == std::io::ErrorKind::TimedOut => continue,
             Err(error) => {
-                eprintln!(
-                    "[camera] stream.next failed after frames={} emitted={}: {}",
-                    frame_count, emitted_count, error
-                );
                 return Err(format!("Failed to capture frame: {}", error));
             }
         };
 
-        frame_count += 1;
-
         let used =
             usize::try_from(meta.bytesused).map_err(|_| "Failed to read frame size".to_string())?;
-        if frame_count <= 5 || frame_count % 20 == 0 {
-            eprintln!(
-                "[camera] frame seq={} count={} bytesused={} buffer_len={} flags={:?}",
-                meta.sequence,
-                frame_count,
-                used,
-                buf.len(),
-                meta.flags
-            );
-        }
 
         if used == 0 || used > buf.len() {
-            eprintln!(
-                "[camera] skipping invalid frame seq={} bytesused={} buffer_len={}",
-                meta.sequence,
-                used,
-                buf.len()
-            );
             continue;
         }
 
@@ -512,13 +359,7 @@ fn camera_worker(
             actual_fmt.height,
             actual_fmt.fourcc,
         )
-        .map_err(|error| {
-            eprintln!(
-                "[camera] encode failed seq={} count={} bytesused={} fourcc={}: {}",
-                meta.sequence, frame_count, used, pixel_format, error
-            );
-            format!("Failed to encode preview frame: {}", error)
-        })?;
+        .map_err(|error| format!("Failed to encode preview frame: {}", error))?;
 
         let payload = CameraFramePayload {
             data_url,
@@ -528,27 +369,10 @@ fn camera_worker(
             sequence: meta.sequence,
         };
 
-        emitted_count += 1;
-        if emitted_count <= 5 || emitted_count % 20 == 0 {
-            eprintln!(
-                "[camera] emitting preview seq={} emitted={} payload_format={}",
-                meta.sequence, emitted_count, pixel_format
-            );
-        }
-
         if let Err(error) = app.emit(CAMERA_FRAME_EVENT, &payload) {
-            eprintln!(
-                "[camera] emit failed seq={} emitted={}: {}",
-                meta.sequence, emitted_count, error
-            );
             return Err(format!("Failed to emit frame event: {}", error));
         }
     }
-
-    eprintln!(
-        "[camera] worker finished path={} frames={} emitted={}",
-        path, frame_count, emitted_count
-    );
 
     Ok(())
 }

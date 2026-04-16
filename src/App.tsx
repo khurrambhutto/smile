@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import "./App.css";
@@ -26,20 +26,15 @@ const CAMERA_FRAME_EVENT = "camera-frame";
 const CAMERA_STATUS_EVENT = "camera-status";
 
 function App() {
-  const [cameras, setCameras] = useState<CameraInfo[]>([]);
-  const [selectedCameraId, setSelectedCameraId] = useState("");
+  const [, setCameras] = useState<CameraInfo[]>([]);
+  const [, setSelectedCameraId] = useState("");
   const [previewSrc, setPreviewSrc] = useState("");
   const [status, setStatus] = useState("Starting camera…");
   const [statusState, setStatusState] = useState("starting");
   const [error, setError] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
-  const [frameInfo, setFrameInfo] = useState<CameraFramePayload | null>(null);
+  const [, setIsRunning] = useState(false);
+  const [, setFrameInfo] = useState<CameraFramePayload | null>(null);
   const autoStartedRef = useRef(false);
-
-  const selectedCamera = useMemo(
-    () => cameras.find((camera) => camera.id === selectedCameraId) ?? null,
-    [cameras, selectedCameraId],
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -146,34 +141,33 @@ function App() {
     }
   }
 
-  const footerLabel = selectedCamera?.name ?? "Camera";
   const showOverlay = !previewSrc;
 
   return (
-    <main className="booth-app">
-      <section className="booth-stage">
+    <main className="camera-app">
+      <section className="camera-viewport">
         {previewSrc ? (
           <img
-            className="booth-preview"
+            className="camera-feed"
             src={previewSrc}
             alt="Live camera preview"
           />
         ) : (
-          <div className="booth-preview booth-preview-placeholder" />
+          <div className="camera-feed camera-feed-placeholder" />
         )}
 
-        <div className={`booth-overlay ${showOverlay ? "visible" : ""}`}>
-          <div className="booth-status-card">
-            <div className="booth-status-dot" />
+        <div className={`camera-overlay ${showOverlay ? "visible" : ""}`}>
+          <div className="status-card">
+            <div className="status-indicator" />
             <div>
-              <strong className="booth-status-title">
+              <strong className="status-title">
                 {error
                   ? "Camera Error"
                   : statusState === "empty"
                     ? "No Camera Found"
                     : "Opening Camera"}
               </strong>
-              <p className="booth-status-text">
+              <p className="status-message">
                 {error ||
                   (statusState === "empty"
                     ? "Connect a camera to continue."
@@ -183,13 +177,9 @@ function App() {
           </div>
         </div>
 
-        <div className="booth-top-label">
-          <span>smile</span>
-        </div>
-
-        <footer className="booth-dock" aria-hidden="true">
-          <div className="dock-side dock-left">
-            <button className="dock-icon-button" type="button" disabled>
+        <footer className="toolbar">
+          <div className="toolbar-group toolbar-left">
+            <button className="tool-btn" type="button" disabled>
               <span className="icon-grid">
                 <span />
                 <span />
@@ -198,44 +188,32 @@ function App() {
               </span>
             </button>
 
-            <button className="dock-icon-button" type="button" disabled>
+            <button className="tool-btn active" type="button" disabled>
               <span className="icon-photo" />
             </button>
 
-            <button className="dock-icon-button" type="button" disabled>
+            <button className="tool-btn" type="button" disabled>
               <span className="icon-video" />
             </button>
           </div>
 
-          <div className="dock-center">
+          <div className="toolbar-center">
             <button
-              className="shutter-button"
+              className="shutter-btn"
               type="button"
               disabled
-              aria-label="Shutter"
+              aria-label="Take photo"
             >
-              <span className="shutter-inner">
-                <span className="shutter-camera-glyph" />
-              </span>
+              <span className="shutter-fill" />
             </button>
           </div>
 
-          <div className="dock-side dock-right">
-            <button className="effects-button" type="button" disabled>
+          <div className="toolbar-group toolbar-right">
+            <button className="effects-btn" type="button" disabled>
               Effects
             </button>
           </div>
         </footer>
-
-        <div className="booth-meta">
-          <span>{footerLabel}</span>
-          {frameInfo ? (
-            <span>
-              {frameInfo.width}×{frameInfo.height} · {frameInfo.pixelFormat}
-            </span>
-          ) : null}
-          <span>{isRunning ? "Live" : "Standby"}</span>
-        </div>
       </section>
     </main>
   );
