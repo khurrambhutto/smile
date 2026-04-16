@@ -121,9 +121,9 @@ function App() {
       const updated = await invoke<CameraInfo[]>("start_camera", {
         request: {
           cameraId,
-          width: 640,
-          height: 480,
-          fps: 15,
+          width: 1280,
+          height: 720,
+          fps: 30,
         },
       });
 

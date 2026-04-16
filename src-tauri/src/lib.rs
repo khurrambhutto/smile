@@ -24,13 +24,13 @@ use v4l::{
 
 const CAMERA_FRAME_EVENT: &str = "camera-frame";
 const CAMERA_STATUS_EVENT: &str = "camera-status";
-const DEFAULT_WIDTH: u32 = 640;
-const DEFAULT_HEIGHT: u32 = 480;
-const DEFAULT_FPS: u32 = 15;
+const DEFAULT_WIDTH: u32 = 1280;
+const DEFAULT_HEIGHT: u32 = 720;
+const DEFAULT_FPS: u32 = 30;
 const STREAM_BUFFER_COUNT: u32 = 4;
 const FIRST_FRAME_TIMEOUT_MS: u64 = 3_000;
 const STREAM_TIMEOUT_MS: u64 = 1_000;
-const PREVIEW_FRAME_INTERVAL_MS: u64 = 250;
+const PREVIEW_FRAME_INTERVAL_MS: u64 = 33;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
