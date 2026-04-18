@@ -44,8 +44,8 @@ Bundles land in `src-tauri/target/release/bundle/`.
 
 ## Status
 
-Work in progress. Live preview is working; photo and video capture
-are on the way.
+Work in progress. Live preview and photo capture are working; video capture
+is on the way.
 
 ## Credits
 
