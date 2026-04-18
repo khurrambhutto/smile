@@ -139,6 +139,15 @@ function App() {
     }, RECONNECT_DELAY_MS);
   }
 
+  async function capturePhoto() {
+    if (!isRunning) return;
+    try {
+      await invoke<string>("capture_photo");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  }
+
   const previewSrc = previewUrl
     ? `${previewUrl}?t=${previewToken}`
     : "";
@@ -204,7 +213,8 @@ function App() {
             <button
               className="shutter-btn"
               type="button"
-              disabled
+              disabled={!isRunning}
+              onClick={capturePhoto}
               aria-label="Take photo"
             >
               <span className="shutter-fill" />

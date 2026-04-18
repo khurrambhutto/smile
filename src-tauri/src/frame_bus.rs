@@ -30,6 +30,13 @@ impl FrameBus {
         })
     }
 
+    /// Return the most recently published frame, or `None` if the camera has
+    /// not yet produced any output.
+    pub fn latest(&self) -> Option<Arc<Vec<u8>>> {
+        let guard = self.inner.lock().expect("frame bus poisoned");
+        guard.frame.clone()
+    }
+
     pub fn publish(&self, bytes: Arc<Vec<u8>>) {
         let mut guard = self.inner.lock().expect("frame bus poisoned");
         guard.sequence = guard.sequence.wrapping_add(1);

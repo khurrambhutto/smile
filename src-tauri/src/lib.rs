@@ -2,6 +2,7 @@ mod camera;
 mod frame_bus;
 mod preview_server;
 
+use std::path::PathBuf;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 
 use tauri::Manager;
@@ -79,6 +80,30 @@ fn get_preview_url(state: tauri::State<'_, AppState>) -> Result<String, String> 
     state.preview_url()
 }
 
+#[tauri::command]
+fn capture_photo(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let frame = state
+        .frame_bus
+        .latest()
+        .ok_or("No frame available — is the camera running?")?;
+
+    let home = std::env::var("HOME")
+        .map(PathBuf::from)
+        .map_err(|_| "Could not determine home directory".to_string())?;
+    let save_dir = home.join("Pictures").join("Camera");
+    std::fs::create_dir_all(&save_dir)
+        .map_err(|e| format!("Failed to create directory: {e}"))?;
+
+    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("IMG_{timestamp}.jpg");
+    let path = save_dir.join(&filename);
+
+    std::fs::write(&path, frame.as_ref())
+        .map_err(|e| format!("Failed to save photo: {e}"))?;
+
+    Ok(path.to_string_lossy().to_string())
+}
+
 fn stop_active_runtime(state: &AppState) -> Result<(), String> {
     let runtime = {
         let mut guard = state
@@ -123,6 +148,7 @@ pub fn run() {
             start_camera,
             stop_camera,
             get_preview_url,
+            capture_photo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -33,7 +33,7 @@ const STREAM_BUFFER_COUNT: u32 = 4;
 const FIRST_FRAME_TIMEOUT_MS: u64 = 3_000;
 const STREAM_TIMEOUT_MS: u64 = 1_000;
 const MIN_ACCEPTABLE_FPS: u32 = 15;
-const YUYV_JPEG_QUALITY: u8 = 80;
+const YUYV_JPEG_QUALITY: u8 = 95;
 
 const FOURCC_MJPG: [u8; 4] = *b"MJPG";
 const FOURCC_YUYV: [u8; 4] = *b"YUYV";
