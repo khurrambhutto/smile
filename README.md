@@ -17,6 +17,8 @@ apps, and stays out of your way so you can just point and shoot.
 ## Features
 
 - Smooth, high-resolution live preview
+- Photo capture with fast local saves
+- Video recording with microphone audio
 - Native GNOME-style dark UI
 - Lightweight and quick to launch
 - Works out of the box with most USB and built-in webcams
@@ -44,8 +46,8 @@ Bundles land in `src-tauri/target/release/bundle/`.
 
 ## Status
 
-Work in progress. Live preview and photo capture are working; video capture
-is on the way.
+Live preview, photo capture, and audio-backed video recording are working.
+Smile is still evolving, but the core camera flow is ready to use.
 
 ## Credits
 
