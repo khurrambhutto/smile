@@ -2,7 +2,7 @@ use std::{
     io::Cursor,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Mutex,
     },
     thread::{self, JoinHandle},
     time::Duration,
@@ -23,6 +23,7 @@ use v4l::{
 };
 
 use crate::frame_bus::FrameBus;
+use crate::recording::RecordingState;
 
 const CAMERA_STATUS_EVENT: &str = "camera-status";
 pub const DEFAULT_WIDTH: u32 = 1280;
@@ -68,6 +69,15 @@ struct SelectedMode {
     height: u32,
     fourcc: FourCC,
     fps: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActiveStreamInfo {
+    pub width: u32,
+    pub height: u32,
+    pub fps: u32,
+    pub pixel_format: String,
 }
 
 pub struct CameraRuntime {
@@ -134,6 +144,8 @@ pub fn select_camera(
 pub fn spawn_worker(
     app: AppHandle,
     bus: Arc<FrameBus>,
+    recording: Arc<RecordingState>,
+    active_stream: Arc<Mutex<Option<ActiveStreamInfo>>>,
     path: String,
     request: Option<&StartCameraRequest>,
 ) -> Result<CameraRuntime, String> {
@@ -158,6 +170,8 @@ pub fn spawn_worker(
     let worker_flag = Arc::clone(&stop_flag);
     let worker_app = app.clone();
     let worker_bus = Arc::clone(&bus);
+    let worker_recording = Arc::clone(&recording);
+    let worker_active_stream = Arc::clone(&active_stream);
 
     let handle = thread::Builder::new()
         .name("camera-capture".into())
@@ -165,12 +179,16 @@ pub fn spawn_worker(
             let result = run_capture_loop(
                 &worker_app,
                 &worker_bus,
+                &worker_recording,
+                &worker_active_stream,
                 &path,
                 want_width,
                 want_height,
                 want_fps,
                 &worker_flag,
             );
+            clear_active_stream(&worker_active_stream);
+            worker_recording.stop_for_camera_shutdown(&worker_app);
 
             match result {
                 Ok(()) => emit_status(&worker_app, "stopped", "Camera stopped".to_string()),
@@ -185,6 +203,8 @@ pub fn spawn_worker(
 fn run_capture_loop(
     app: &AppHandle,
     bus: &Arc<FrameBus>,
+    recording: &Arc<RecordingState>,
+    active_stream: &Arc<Mutex<Option<ActiveStreamInfo>>>,
     path: &str,
     want_width: u32,
     want_height: u32,
@@ -236,6 +256,15 @@ fn run_capture_loop(
             actual_fmt.width, actual_fmt.height, pixel_format, actual_fps
         ),
     );
+    update_active_stream(
+        active_stream,
+        ActiveStreamInfo {
+            width: actual_fmt.width,
+            height: actual_fmt.height,
+            fps: actual_fps.max(1),
+            pixel_format: pixel_format.clone(),
+        },
+    );
 
     let mut stream = MmapStream::with_buffers(&device, Type::VideoCapture, STREAM_BUFFER_COUNT)
         .map_err(|error| format!("Failed to create capture stream: {error}"))?;
@@ -283,6 +312,7 @@ fn run_capture_loop(
             &mut rgb_scratch,
         )?;
 
+        recording.write_frame(app, &jpeg);
         bus.publish(Arc::new(jpeg));
 
         if first_frame {
@@ -293,6 +323,21 @@ fn run_capture_loop(
     }
 
     Ok(())
+}
+
+fn update_active_stream(
+    active_stream: &Arc<Mutex<Option<ActiveStreamInfo>>>,
+    info: ActiveStreamInfo,
+) {
+    if let Ok(mut guard) = active_stream.lock() {
+        *guard = Some(info);
+    }
+}
+
+fn clear_active_stream(active_stream: &Arc<Mutex<Option<ActiveStreamInfo>>>) {
+    if let Ok(mut guard) = active_stream.lock() {
+        *guard = None;
+    }
 }
 
 fn encode_frame_as_jpeg(

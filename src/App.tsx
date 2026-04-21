@@ -14,7 +14,17 @@ type CameraStatusPayload = {
   message: string;
 };
 
+type RecordingStatusPayload = {
+  state: string;
+  message: string;
+  path: string | null;
+  isRecording: boolean;
+};
+
+type CaptureMode = "photo" | "video";
+
 const CAMERA_STATUS_EVENT = "camera-status";
+const RECORDING_STATUS_EVENT = "recording-status";
 const RECONNECT_DELAY_MS = 750;
 
 function App() {
@@ -26,6 +36,14 @@ function App() {
   const [statusState, setStatusState] = useState("starting");
   const [error, setError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [mode, setMode] = useState<CaptureMode>("photo");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingMessage, setRecordingMessage] = useState("");
+  const [recordingPath, setRecordingPath] = useState("");
+  const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(
+    null,
+  );
+  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
 
   const autoStartedRef = useRef(false);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -33,6 +51,7 @@ function App() {
   useEffect(() => {
     let mounted = true;
     let unlistenStatus: UnlistenFn | null = null;
+    let unlistenRecording: UnlistenFn | null = null;
 
     const setup = async () => {
       try {
@@ -57,9 +76,23 @@ function App() {
           },
         );
 
+        unlistenRecording = await listen<RecordingStatusPayload>(
+          RECORDING_STATUS_EVENT,
+          (event) => {
+            if (!mounted) return;
+            applyRecordingStatus(event.payload);
+          },
+        );
+
         const url = await invoke<string>("get_preview_url");
         if (!mounted) return;
         setPreviewUrl(url);
+
+        const recording = await invoke<RecordingStatusPayload>(
+          "get_recording_status",
+        );
+        if (!mounted) return;
+        applyRecordingStatus(recording);
 
         const found = await invoke<CameraInfo[]>("list_cameras");
         if (!mounted) return;
@@ -91,12 +124,28 @@ function App() {
     return () => {
       mounted = false;
       if (unlistenStatus) void unlistenStatus();
+      if (unlistenRecording) void unlistenRecording();
       if (reconnectTimerRef.current !== null) {
         window.clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isRecording || recordingStartedAt === null) {
+      setRecordingElapsedMs(0);
+      return;
+    }
+
+    const tick = () => {
+      setRecordingElapsedMs(Date.now() - recordingStartedAt);
+    };
+
+    tick();
+    const timer = window.setInterval(tick, 250);
+    return () => window.clearInterval(timer);
+  }, [isRecording, recordingStartedAt]);
 
   async function startCamera(cameraId: string) {
     try {
@@ -127,6 +176,24 @@ function App() {
     }
   }
 
+  function applyRecordingStatus(payload: RecordingStatusPayload) {
+    setIsRecording(payload.isRecording);
+    setRecordingMessage(payload.message);
+    setRecordingPath(payload.path ?? "");
+
+    if (payload.isRecording) {
+      setRecordingStartedAt((startedAt) => startedAt ?? Date.now());
+      setError("");
+      return;
+    }
+
+    setRecordingStartedAt(null);
+
+    if (payload.state === "error") {
+      setError(payload.message);
+    }
+  }
+
   // The preview server serves multipart/x-mixed-replace, but if the camera
   // never produced a frame (e.g. device error, permission denied) the
   // browser will eventually give up on the <img>. Re-mount the element on
@@ -137,6 +204,22 @@ function App() {
       reconnectTimerRef.current = null;
       setPreviewToken((token) => token + 1);
     }, RECONNECT_DELAY_MS);
+  }
+
+  async function toggleRecording() {
+    if (!isRecording && !isRunning) return;
+
+    try {
+      setError("");
+
+      const payload = isRecording
+        ? await invoke<RecordingStatusPayload>("stop_recording")
+        : await invoke<RecordingStatusPayload>("start_recording");
+
+      applyRecordingStatus(payload);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   }
 
   async function capturePhoto() {
@@ -153,10 +236,19 @@ function App() {
     : "";
 
   const showOverlay = !isRunning;
+  const recordingLabel = formatRecordingTime(recordingElapsedMs);
+  const videoPrimaryLabel = isRecording ? "Stop recording" : "Start recording";
 
   return (
     <main className="camera-app">
       <section className="camera-viewport">
+        {mode === "video" ? (
+          <div className={`recording-pill ${isRecording ? "visible" : ""}`}>
+            <span className="recording-dot" />
+            <span>{isRecording ? recordingLabel : "Video mode"}</span>
+          </div>
+        ) : null}
+
         {previewSrc ? (
           <img
             className="camera-feed"
@@ -200,36 +292,80 @@ function App() {
               </span>
             </button>
 
-            <button className="tool-btn active" type="button" disabled>
+            <button
+              className={`tool-btn ${mode === "photo" ? "active" : ""}`}
+              type="button"
+              onClick={() => !isRecording && setMode("photo")}
+              disabled={isRecording}
+              aria-pressed={mode === "photo"}
+            >
               <span className="icon-photo" />
             </button>
 
-            <button className="tool-btn" type="button" disabled>
+            <button
+              className={`tool-btn ${mode === "video" ? "active" : ""}`}
+              type="button"
+              onClick={() => setMode("video")}
+              disabled={isRecording && mode !== "video"}
+              aria-pressed={mode === "video"}
+            >
               <span className="icon-video" />
             </button>
           </div>
 
           <div className="toolbar-center">
-            <button
-              className="shutter-btn"
-              type="button"
-              disabled={!isRunning}
-              onClick={capturePhoto}
-              aria-label="Take photo"
-            >
-              <span className="shutter-fill" />
-            </button>
+            {mode === "photo" ? (
+              <button
+                className="shutter-btn"
+                type="button"
+                disabled={!isRunning}
+                onClick={capturePhoto}
+                aria-label="Take photo"
+              >
+                <span className="shutter-fill" />
+              </button>
+            ) : (
+              <button
+                className={`record-btn ${isRecording ? "recording" : ""}`}
+                type="button"
+                disabled={!isRunning && !isRecording}
+                onClick={toggleRecording}
+                aria-label={videoPrimaryLabel}
+              >
+                <span className="record-btn-outer">
+                  <span className="record-btn-inner" />
+                </span>
+              </button>
+            )}
           </div>
 
           <div className="toolbar-group toolbar-right">
-            <button className="effects-btn" type="button" disabled>
-              Effects
-            </button>
+            <div className="status-stack">
+              {mode === "video" && (recordingMessage || recordingPath) ? (
+                <div className="recording-meta" aria-live="polite">
+                  <strong>{isRecording ? "Recording" : "Video saved"}</strong>
+                  <span>{isRecording ? recordingMessage : recordingPath || recordingMessage}</span>
+                </div>
+              ) : null}
+
+              <button className="effects-btn" type="button" disabled>
+                Effects
+              </button>
+            </div>
           </div>
         </footer>
       </section>
     </main>
   );
+}
+
+function formatRecordingTime(elapsedMs: number) {
+  const totalSeconds = Math.floor(elapsedMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
 }
 
 function getErrorMessage(error: unknown) {
