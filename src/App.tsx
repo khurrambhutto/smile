@@ -38,6 +38,7 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<CaptureMode>("photo");
   const [isRecording, setIsRecording] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
 
   const autoStartedRef = useRef(false);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -169,11 +170,18 @@ function App() {
   // browser will eventually give up on the <img>. Re-mount the element on
   // error to reconnect once the camera recovers.
   function handlePreviewError() {
-    if (reconnectTimerRef.current !== null) return;
+    setPreviewFailed(true);
+    if (reconnectTimerRef.current !== null) {
+      window.clearTimeout(reconnectTimerRef.current);
+    }
     reconnectTimerRef.current = window.setTimeout(() => {
       reconnectTimerRef.current = null;
       setPreviewToken((token) => token + 1);
     }, RECONNECT_DELAY_MS);
+  }
+
+  function handlePreviewLoad() {
+    setPreviewFailed(false);
   }
 
   async function toggleRecording() {
@@ -213,10 +221,13 @@ function App() {
       <section className="camera-viewport">
         {previewSrc ? (
           <img
+            key={previewToken}
             className="camera-feed"
             src={previewSrc}
             alt="Live camera preview"
+            onLoad={handlePreviewLoad}
             onError={handlePreviewError}
+            style={{ opacity: previewFailed ? 0 : 1 }}
           />
         ) : (
           <div className="camera-feed camera-feed-placeholder" />
