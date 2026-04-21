@@ -38,12 +38,6 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<CaptureMode>("photo");
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingMessage, setRecordingMessage] = useState("");
-  const [recordingPath, setRecordingPath] = useState("");
-  const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(
-    null,
-  );
-  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
 
   const autoStartedRef = useRef(false);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -132,21 +126,6 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isRecording || recordingStartedAt === null) {
-      setRecordingElapsedMs(0);
-      return;
-    }
-
-    const tick = () => {
-      setRecordingElapsedMs(Date.now() - recordingStartedAt);
-    };
-
-    tick();
-    const timer = window.setInterval(tick, 250);
-    return () => window.clearInterval(timer);
-  }, [isRecording, recordingStartedAt]);
-
   async function startCamera(cameraId: string) {
     try {
       setError("");
@@ -178,16 +157,7 @@ function App() {
 
   function applyRecordingStatus(payload: RecordingStatusPayload) {
     setIsRecording(payload.isRecording);
-    setRecordingMessage(payload.message);
-    setRecordingPath(payload.path ?? "");
-
-    if (payload.isRecording) {
-      setRecordingStartedAt((startedAt) => startedAt ?? Date.now());
-      setError("");
-      return;
-    }
-
-    setRecordingStartedAt(null);
+    if (payload.isRecording) setError("");
 
     if (payload.state === "error") {
       setError(payload.message);
@@ -236,19 +206,11 @@ function App() {
     : "";
 
   const showOverlay = !isRunning;
-  const recordingLabel = formatRecordingTime(recordingElapsedMs);
   const videoPrimaryLabel = isRecording ? "Stop recording" : "Start recording";
 
   return (
     <main className="camera-app">
       <section className="camera-viewport">
-        {mode === "video" ? (
-          <div className={`recording-pill ${isRecording ? "visible" : ""}`}>
-            <span className="recording-dot" />
-            <span>{isRecording ? recordingLabel : "Video mode"}</span>
-          </div>
-        ) : null}
-
         {previewSrc ? (
           <img
             className="camera-feed"
@@ -341,13 +303,6 @@ function App() {
 
           <div className="toolbar-group toolbar-right">
             <div className="status-stack">
-              {mode === "video" && (recordingMessage || recordingPath) ? (
-                <div className="recording-meta" aria-live="polite">
-                  <strong>{isRecording ? "Recording" : "Video saved"}</strong>
-                  <span>{isRecording ? recordingMessage : recordingPath || recordingMessage}</span>
-                </div>
-              ) : null}
-
               <button className="effects-btn" type="button" disabled>
                 Effects
               </button>
@@ -357,15 +312,6 @@ function App() {
       </section>
     </main>
   );
-}
-
-function formatRecordingTime(elapsedMs: number) {
-  const totalSeconds = Math.floor(elapsedMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
 }
 
 function getErrorMessage(error: unknown) {
