@@ -313,20 +313,6 @@ function App() {
 
         <footer className="toolbar">
           <div className="toolbar-group toolbar-left">
-            <button
-              className="tool-btn toolbar-glass"
-              type="button"
-              disabled
-              aria-label="Gallery"
-            >
-              <span className="icon-grid">
-                <span />
-                <span />
-                <span />
-                <span />
-              </span>
-            </button>
-
             <div
               className="toolbar-glass mode-segmented"
               role="group"

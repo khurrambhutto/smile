@@ -167,34 +167,6 @@ button {
     justify-content: center;
 }
 
-/* --- Toolbar icon buttons --- */
-
-.tool-btn {
-    appearance: none;
-    width: 40px;
-    height: 40px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    border-radius: var(--adw-radius-sm);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.tool-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.tool-btn:disabled {
-    opacity: 0.85;
-}
-
 /* Shared frosted chrome for toolbar controls */
 
 .toolbar-glass {
@@ -208,36 +180,6 @@ button {
         0 8px 24px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-}
-
-.tool-btn.toolbar-glass {
-    width: 40px;
-    min-width: 40px;
-    padding: 0;
-    border-radius: 14px;
-    color: rgba(255, 255, 255, 0.88);
-    transition:
-        background 0.2s ease,
-        color 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.tool-btn.toolbar-glass:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.08) inset,
-        0 8px 28px rgba(0, 0, 0, 0.4);
-}
-
-.tool-btn.toolbar-glass:focus-visible {
-    outline: 2px solid rgba(120, 174, 237, 0.95);
-    outline-offset: 2px;
-}
-
-.tool-btn.toolbar-glass:disabled {
-    opacity: 0.55;
-    cursor: default;
 }
 
 /* --- Photo / video segmented control --- */
@@ -312,21 +254,6 @@ button {
 .mode-segment:disabled {
     cursor: default;
     opacity: 0.55;
-}
-
-/* CSS-only icons */
-
-.icon-grid {
-    width: 16px;
-    height: 16px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2.5px;
-}
-
-.icon-grid span {
-    border-radius: 2px;
-    background: currentColor;
 }
 
 .mode-icon {
