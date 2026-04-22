@@ -27,6 +27,63 @@ const CAMERA_STATUS_EVENT = "camera-status";
 const RECORDING_STATUS_EVENT = "recording-status";
 const RECONNECT_DELAY_MS = 750;
 
+function IconPhoto({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"
+        stroke="currentColor"
+        strokeWidth="1.85"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="12"
+        cy="13"
+        r="3.25"
+        stroke="currentColor"
+        strokeWidth="1.85"
+      />
+    </svg>
+  );
+}
+
+function IconVideo({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <rect
+        x="2"
+        y="6"
+        width="14"
+        height="12"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.85"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m16 10 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"
+        stroke="currentColor"
+        strokeWidth="1.85"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function App() {
   const [, setCameras] = useState<CameraInfo[]>([]);
   const [, setSelectedCameraId] = useState("");
@@ -256,7 +313,12 @@ function App() {
 
         <footer className="toolbar">
           <div className="toolbar-group toolbar-left">
-            <button className="tool-btn" type="button" disabled>
+            <button
+              className="tool-btn toolbar-glass"
+              type="button"
+              disabled
+              aria-label="Gallery"
+            >
               <span className="icon-grid">
                 <span />
                 <span />
@@ -265,25 +327,38 @@ function App() {
               </span>
             </button>
 
-            <button
-              className={`tool-btn ${mode === "photo" ? "active" : ""}`}
-              type="button"
-              onClick={() => !isRecording && setMode("photo")}
-              disabled={isRecording}
-              aria-pressed={mode === "photo"}
+            <div
+              className="toolbar-glass mode-segmented"
+              role="group"
+              aria-label="Capture mode"
             >
-              <span className="icon-photo" />
-            </button>
-
-            <button
-              className={`tool-btn ${mode === "video" ? "active" : ""}`}
-              type="button"
-              onClick={() => setMode("video")}
-              disabled={isRecording && mode !== "video"}
-              aria-pressed={mode === "video"}
-            >
-              <span className="icon-video" />
-            </button>
+              <div
+                className="mode-segmented-track"
+                data-mode={mode}
+              >
+                <div className="mode-segmented-thumb" aria-hidden />
+                <button
+                  className={`mode-segment ${mode === "photo" ? "is-active" : ""}`}
+                  type="button"
+                  onClick={() => !isRecording && setMode("photo")}
+                  disabled={isRecording}
+                  aria-pressed={mode === "photo"}
+                  aria-label="Photo mode"
+                >
+                  <IconPhoto className="mode-icon" />
+                </button>
+                <button
+                  className={`mode-segment ${mode === "video" ? "is-active" : ""}`}
+                  type="button"
+                  onClick={() => setMode("video")}
+                  disabled={isRecording && mode !== "video"}
+                  aria-pressed={mode === "video"}
+                  aria-label="Video mode"
+                >
+                  <IconVideo className="mode-icon" />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="toolbar-center">
@@ -314,7 +389,11 @@ function App() {
 
           <div className="toolbar-group toolbar-right">
             <div className="status-stack">
-              <button className="effects-btn" type="button" disabled>
+              <button
+                className="effects-btn toolbar-glass"
+                type="button"
+                disabled
+              >
                 Effects
               </button>
             </div>
