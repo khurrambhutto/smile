@@ -312,7 +312,12 @@ fn run_capture_loop(
             &mut rgb_scratch,
         )?;
 
-        recording.write_frame(app, &jpeg);
+        if recording.is_recording() {
+            match mirror_jpeg_frame(&jpeg) {
+                Ok(mirrored) => recording.write_frame(app, &mirrored),
+                Err(error) => recording.fail_active(app, format!("Recording stopped: {error}")),
+            }
+        }
         bus.publish(Arc::new(jpeg));
 
         if first_frame {
@@ -587,6 +592,20 @@ fn push_rgb_pixel(out: &mut Vec<u8>, y: i32, u: i32, v: i32) {
 
 fn clamp_u8(v: i32) -> u8 {
     v.clamp(0, 255) as u8
+}
+
+pub fn mirror_jpeg_frame(frame: &[u8]) -> Result<Vec<u8>, String> {
+    let decoded = image::load_from_memory(frame)
+        .map_err(|error| format!("Failed to decode MJPEG frame: {error}"))?;
+    let mirrored = decoded.fliph().to_rgb8();
+    let mut jpeg = Vec::with_capacity(frame.len());
+    encode_rgb_as_jpeg(
+        mirrored.as_raw(),
+        mirrored.width(),
+        mirrored.height(),
+        &mut jpeg,
+    )?;
+    Ok(jpeg)
 }
 
 fn encode_rgb_as_jpeg(

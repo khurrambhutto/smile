@@ -141,7 +141,9 @@ fn capture_photo(state: tauri::State<'_, AppState>) -> Result<String, String> {
     let filename = format!("IMG_{timestamp}.jpg");
     let path = save_dir.join(&filename);
 
-    std::fs::write(&path, frame.as_ref())
+    let mirrored = camera::mirror_jpeg_frame(frame.as_ref())?;
+
+    std::fs::write(&path, mirrored)
         .map_err(|e| format!("Failed to save photo: {e}"))?;
 
     Ok(path.to_string_lossy().to_string())

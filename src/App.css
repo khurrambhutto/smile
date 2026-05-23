@@ -1,53 +1,117 @@
-:root {
-    --adw-dark: #1a1a1a;
-    --adw-surface: #2a2a2a;
-    --adw-card: #303030;
-    --adw-text: #ffffff;
-    --adw-text-dim: rgba(255, 255, 255, 0.5);
-    --adw-border: rgba(255, 255, 255, 0.06);
-    --adw-shutter: #e01b24;
-    --adw-radius-lg: 12px;
-    --adw-radius-sm: 8px;
+/* ============================================================
+   Smile — Camera App Styles
+   System-adaptive light / dark theme
+   ============================================================ */
 
-    font-family: "Cantarell", system-ui, -apple-system, sans-serif;
-    font-size: 15px;
+/* --- Light theme (default) --- */
+:root {
+    --sm-bg: #f5f5f5;
+    --sm-viewport-bg: #1a1a1a;
+    --sm-text: rgba(0, 0, 0, 0.85);
+    --sm-text-dim: rgba(0, 0, 0, 0.5);
+    --sm-shutter: #e8262c;
+    --sm-shutter-hover: #d41e24;
+    --sm-shutter-shadow: rgba(232, 38, 44, 0.3);
+    --sm-toolbar-bg: rgba(245, 245, 245, 0.72);
+    --sm-toolbar-border: rgba(0, 0, 0, 0.08);
+    --sm-pill-bg: rgba(0, 0, 0, 0.06);
+    --sm-pill-active: rgba(0, 0, 0, 0.12);
+    --sm-pill-border: rgba(0, 0, 0, 0.06);
+    --sm-icon-color: rgba(0, 0, 0, 0.5);
+    --sm-icon-hover: rgba(0, 0, 0, 0.75);
+    --sm-icon-active: #fff;
+    --sm-active-bg: rgba(0, 0, 0, 0.7);
+    --sm-active-shadow: rgba(0, 0, 0, 0.15);
+    --sm-effects-bg: rgba(0, 0, 0, 0.06);
+    --sm-effects-hover: rgba(0, 0, 0, 0.1);
+    --sm-effects-border: rgba(0, 0, 0, 0.06);
+    --sm-effects-color: rgba(0, 0, 0, 0.6);
+    --sm-effects-color-hover: rgba(0, 0, 0, 0.8);
+    --sm-overlay-bg: rgba(255, 255, 255, 0.88);
+    --sm-overlay-border: rgba(0, 0, 0, 0.06);
+    --sm-overlay-shadow: rgba(0, 0, 0, 0.12);
+    --sm-overlay-text: rgba(0, 0, 0, 0.85);
+    --sm-overlay-text-dim: rgba(0, 0, 0, 0.5);
+    --sm-radius: 10px;
+    --sm-radius-sm: 6px;
+
+    font-family: "Inter", "SF Pro Display", "Cantarell", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
     line-height: 1.4;
     font-weight: 400;
-    color: var(--adw-text);
-    background: var(--adw-dark);
+    color: var(--sm-text);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    color-scheme: dark;
+    color-scheme: light dark;
+}
+
+/* --- Dark theme --- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --sm-bg: #0a0a0a;
+        --sm-viewport-bg: #0a0a0a;
+        --sm-text: #fff;
+        --sm-text-dim: rgba(255, 255, 255, 0.6);
+        --sm-toolbar-bg: rgba(30, 30, 30, 0.55);
+        --sm-toolbar-border: rgba(255, 255, 255, 0.08);
+        --sm-pill-bg: rgba(255, 255, 255, 0.1);
+        --sm-pill-active: rgba(255, 255, 255, 0.22);
+        --sm-pill-border: rgba(255, 255, 255, 0.06);
+        --sm-icon-color: rgba(255, 255, 255, 0.55);
+        --sm-icon-hover: rgba(255, 255, 255, 0.85);
+        --sm-icon-active: #fff;
+        --sm-active-bg: rgba(255, 255, 255, 0.22);
+        --sm-active-shadow: rgba(0, 0, 0, 0.3);
+        --sm-effects-bg: rgba(255, 255, 255, 0.12);
+        --sm-effects-hover: rgba(255, 255, 255, 0.18);
+        --sm-effects-border: rgba(255, 255, 255, 0.06);
+        --sm-effects-color: rgba(255, 255, 255, 0.75);
+        --sm-effects-color-hover: rgba(255, 255, 255, 0.9);
+        --sm-overlay-bg: rgba(20, 20, 20, 0.85);
+        --sm-overlay-border: rgba(255, 255, 255, 0.08);
+        --sm-overlay-shadow: rgba(0, 0, 0, 0.4);
+        --sm-overlay-text: #fff;
+        --sm-overlay-text-dim: rgba(255, 255, 255, 0.6);
+    }
 }
 
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 html,
 body,
 #root {
-    margin: 0;
     height: 100%;
+    overflow: hidden;
 }
 
 body {
-    height: 100vh;
-    overflow: hidden;
-    background: var(--adw-dark);
+    background: var(--sm-bg);
 }
 
 button {
     font: inherit;
+    border: 0;
+    outline: none;
 }
+
+/* ============================================================
+   Layout — full-bleed camera viewport
+   ============================================================ */
 
 .camera-app {
     height: 100vh;
+    width: 100vw;
     display: flex;
-    align-items: stretch;
-    background: #000;
+    position: relative;
+    background: var(--sm-viewport-bg);
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
 }
 
 .camera-viewport {
@@ -55,8 +119,12 @@ button {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #0a0a0a;
+    background: var(--sm-viewport-bg);
 }
+
+/* ============================================================
+   Camera feed — fills entire viewport edge-to-edge
+   ============================================================ */
 
 .camera-feed {
     position: absolute;
@@ -65,30 +133,35 @@ button {
     height: 100%;
     display: block;
     object-fit: cover;
-    background: #0a0a0a;
+    transform: scaleX(-1);
+    transform-origin: center;
+    background: var(--sm-viewport-bg);
 }
 
 .camera-feed-placeholder {
-    background: #0f0f0f;
+    background: var(--sm-viewport-bg);
 }
 
-/* --- Status overlay (shown when no feed) --- */
+/* ============================================================
+   Status overlay (shown when no camera / error)
+   ============================================================ */
 
 .camera-overlay {
     position: absolute;
     inset: 0;
-    z-index: 4;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.3s ease;
 }
 
 .camera-overlay.visible {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .status-card {
@@ -96,66 +169,83 @@ button {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 20px;
-    border-radius: var(--adw-radius-lg);
-    background: rgba(30, 30, 30, 0.85);
-    border: 1px solid var(--adw-border);
-    backdrop-filter: blur(20px);
+    padding: 16px 22px;
+    border-radius: var(--sm-radius);
+    background: var(--sm-overlay-bg);
+    border: 1px solid var(--sm-overlay-border);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+        0 8px 32px var(--sm-overlay-shadow),
+        inset 0 0.5px 0 rgba(255, 255, 255, 0.06);
 }
 
 .status-indicator {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     flex: 0 0 auto;
     border-radius: 50%;
-    background: var(--adw-shutter);
+    background: var(--sm-shutter);
+    box-shadow: 0 0 6px rgba(232, 38, 44, 0.5);
     animation: pulse-dot 2s ease-in-out infinite;
 }
 
 @keyframes pulse-dot {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    50% { opacity: 0.35; }
 }
 
 .status-card .status-title {
     display: block;
     margin: 0;
-    color: var(--adw-text);
-    font-size: 0.93rem;
+    color: var(--sm-overlay-text);
+    font-size: 0.88rem;
     font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 .status-card .status-message {
     margin: 2px 0 0;
-    color: var(--adw-text-dim);
-    font-size: 0.84rem;
+    color: var(--sm-overlay-text-dim);
+    font-size: 0.8rem;
     line-height: 1.4;
 }
 
-/* --- Bottom toolbar --- */
+/* ============================================================
+   Bottom toolbar — floating, translucent, overlaid on feed
+   ============================================================ */
 
 .toolbar {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 3;
-    padding: 12px 16px 16px;
+    z-index: 20;
+    height: 72px;
+    padding: 0 20px;
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.35) 60%, transparent 100%);
+    background: var(--sm-toolbar-bg);
+    backdrop-filter: blur(40px) saturate(1.6);
+    -webkit-backdrop-filter: blur(40px) saturate(1.6);
+    border-top: 1px solid var(--sm-toolbar-border);
 }
 
 .toolbar-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
 }
 
 .toolbar-left {
     justify-content: flex-start;
+    width: max-content;
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--sm-pill-bg);
+    border: 1px solid var(--sm-pill-border);
 }
 
 .toolbar-right {
@@ -168,218 +258,263 @@ button {
     justify-content: center;
 }
 
-/* --- Icon buttons (mode switchers) --- */
+/* ============================================================
+   Icon buttons (mode switchers)
+   ============================================================ */
 
 .tool-btn {
     appearance: none;
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 30px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     border: 0;
-    border-radius: var(--adw-radius-sm);
+    border-radius: var(--sm-radius-sm);
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--sm-icon-color);
     cursor: pointer;
     user-select: none;
     transition: background 0.15s ease, color 0.15s ease;
 }
 
 .tool-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--sm-pill-active);
+    color: var(--sm-icon-hover);
 }
 
 .tool-btn.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
+    background: var(--sm-active-bg);
+    color: var(--sm-icon-active);
+    box-shadow: 0 1px 3px var(--sm-active-shadow);
 }
 
 .tool-btn:disabled {
-    opacity: 0.85;
+    opacity: 0.5;
+    cursor: default;
 }
 
-/* CSS-only icons */
-
-.icon-grid {
-    width: 16px;
-    height: 16px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2.5px;
+.tool-btn:disabled:hover {
+    background: transparent;
+    color: var(--sm-icon-color);
 }
 
-.icon-grid span {
-    border-radius: 2px;
-    background: currentColor;
+.tool-btn.active:disabled {
+    opacity: 0.8;
+    background: var(--sm-active-bg);
+    color: var(--sm-icon-active);
 }
 
-.icon-photo {
-    position: relative;
-    width: 18px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1.5px solid currentColor;
+/* ============================================================
+   SVG icon styling
+   ============================================================ */
+
+.tool-btn svg {
+    display: block;
+    flex-shrink: 0;
 }
 
-.icon-photo::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 6px;
-    height: 6px;
-    border: 1.5px solid currentColor;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.icon-video {
-    position: relative;
-    width: 18px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1.5px solid currentColor;
-}
-
-.icon-video::before {
-    content: "";
-    position: absolute;
-    right: -6px;
-    top: 2px;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    border-left: 6px solid currentColor;
-}
-
-/* --- Shutter button --- */
+/* ============================================================
+   Shutter button — clean red circle, no border ring
+   ============================================================ */
 
 .shutter-btn {
     appearance: none;
-    width: 62px;
-    height: 62px;
+    width: 54px;
+    height: 54px;
     padding: 0;
-    border: 3px solid rgba(255, 255, 255, 0.85);
+    border: 0;
     border-radius: 50%;
-    background: transparent;
+    background: var(--sm-shutter);
     cursor: pointer;
     user-select: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.1s ease;
+    color: #fff;
+    box-shadow: 0 2px 10px var(--sm-shutter-shadow);
+    transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+    position: relative;
 }
 
 .shutter-btn:hover {
-    transform: scale(1.04);
+    transform: scale(1.06);
+    background: var(--sm-shutter-hover);
+    box-shadow: 0 4px 18px var(--sm-shutter-shadow);
 }
 
 .shutter-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
+    box-shadow: 0 1px 6px var(--sm-shutter-shadow);
 }
 
 .shutter-btn:disabled {
-    opacity: 1;
+    opacity: 0.4;
     cursor: default;
+    transform: none;
 }
 
-.shutter-fill {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--adw-shutter);
-    transition: background 0.15s ease;
+.shutter-icon {
+    display: block;
 }
 
-.shutter-btn:hover .shutter-fill {
-    background: #c01521;
-}
+/* ============================================================
+   Record button — clean red circle, no border ring
+   ============================================================ */
 
 .record-btn {
     appearance: none;
-    width: 62px;
-    height: 62px;
+    width: 54px;
+    height: 54px;
     padding: 0;
-    border: 3px solid rgba(255, 255, 255, 0.85);
+    border: 0;
     border-radius: 50%;
-    background: transparent;
+    background: var(--sm-shutter);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.1s ease;
+    color: #fff;
+    box-shadow: 0 2px 10px var(--sm-shutter-shadow);
+    transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .record-btn:hover {
-    transform: scale(1.04);
+    transform: scale(1.06);
+    background: var(--sm-shutter-hover);
+    box-shadow: 0 4px 18px var(--sm-shutter-shadow);
 }
 
 .record-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
 }
 
 .record-btn:disabled {
+    opacity: 0.4;
     cursor: default;
+    transform: none;
 }
 
 .record-btn-outer {
-    width: 48px;
-    height: 48px;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     background: transparent;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s ease;
 }
 
 .record-btn-inner {
-    width: 48px;
-    height: 48px;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    background: var(--adw-shutter);
-    transition: width 0.15s ease, height 0.15s ease, border-radius 0.15s ease;
+    background: transparent;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.2s ease;
 }
 
-.record-btn.recording .record-btn-outer {
-    background: rgba(224, 27, 36, 0.18);
+.record-btn.recording {
+    background: rgba(232, 38, 44, 0.2);
 }
 
 .record-btn.recording .record-btn-inner {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: var(--sm-shutter);
 }
 
-/* --- Effects pill --- */
+.record-btn.recording {
+    animation: pulse-record 2s ease-in-out infinite;
+}
+
+@keyframes pulse-record {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(232, 38, 44, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(232, 38, 44, 0.2);
+    }
+}
+
+.record-icon {
+    display: block;
+}
+
+.record-btn.recording .record-icon {
+    display: none;
+}
+
+/* ============================================================
+   Effects button
+   ============================================================ */
 
 .status-stack {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 10px;
 }
 
 .effects-btn {
     appearance: none;
-    min-height: 34px;
-    padding: 6px 16px;
+    min-width: 80px;
+    height: 32px;
+    padding: 0 16px;
     border: 0;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.88rem;
+    border-radius: 7px;
+    background: var(--sm-effects-bg);
+    border: 1px solid var(--sm-effects-border);
+    color: var(--sm-effects-color);
+    font-size: 0.82rem;
     font-weight: 500;
-    cursor: default;
+    letter-spacing: 0.01em;
+    cursor: pointer;
     user-select: none;
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .effects-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--sm-effects-hover);
+    color: var(--sm-effects-color-hover);
 }
 
 .effects-btn:disabled {
-    opacity: 0.85;
+    opacity: 0.45;
+    cursor: default;
+}
+
+.effects-btn:disabled:hover {
+    background: var(--sm-effects-bg);
+    color: var(--sm-effects-color);
+}
+
+/* ============================================================
+   Responsive — smaller screens
+   ============================================================ */
+
+@media (max-width: 560px) {
+    .toolbar {
+        height: 64px;
+        padding: 0 12px;
+    }
+
+    .shutter-btn,
+    .record-btn {
+        width: 48px;
+        height: 48px;
+    }
+
+    .effects-btn {
+        min-width: 70px;
+        padding: 0 12px;
+        font-size: 0.78rem;
+    }
 }

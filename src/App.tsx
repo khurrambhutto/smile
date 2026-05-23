@@ -245,13 +245,13 @@ function App() {
 
         <footer className="toolbar">
           <div className="toolbar-group toolbar-left">
-            <button className="tool-btn" type="button" disabled>
-              <span className="icon-grid">
-                <span />
-                <span />
-                <span />
-                <span />
-              </span>
+            <button className="tool-btn" type="button" disabled aria-label="Gallery">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" />
+                <rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" />
+                <rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" />
+                <rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" />
+              </svg>
             </button>
 
             <button
@@ -260,8 +260,12 @@ function App() {
               onClick={() => !isRecording && setMode("photo")}
               disabled={isRecording}
               aria-pressed={mode === "photo"}
+              aria-label="Photo mode"
             >
-              <span className="icon-photo" />
+              <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
+                <path d="M6.5 1.5h5L13 3.5h2.25a1.25 1.25 0 0 1 1.25 1.25v8.5a1.25 1.25 0 0 1-1.25 1.25H2.75A1.25 1.25 0 0 1 1.5 13.25v-8.5A1.25 1.25 0 0 1 2.75 3.5H5L6.5 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="9" cy="8.75" r="2.75" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
             </button>
 
             <button
@@ -270,8 +274,12 @@ function App() {
               onClick={() => setMode("video")}
               disabled={isRecording && mode !== "video"}
               aria-pressed={mode === "video"}
+              aria-label="Video mode"
             >
-              <span className="icon-video" />
+              <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                <rect x="1" y="1.5" width="12.5" height="11" rx="2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M13.5 5.5L18.5 2.5v9l-5-3v-3Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </div>
 
@@ -284,7 +292,10 @@ function App() {
                 onClick={capturePhoto}
                 aria-label="Take photo"
               >
-                <span className="shutter-fill" />
+                <svg width="22" height="18" viewBox="0 0 22 18" fill="none" className="shutter-icon">
+                  <path d="M7 1.5h8l1.5 2.5h2.75A1.75 1.75 0 0 1 21 5.75v9.5A1.75 1.75 0 0 1 19.25 17H2.75A1.75 1.75 0 0 1 1 15.25v-9.5A1.75 1.75 0 0 1 2.75 4H5.5L7 1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="11" cy="10.5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
               </button>
             ) : (
               <button
@@ -295,7 +306,12 @@ function App() {
                 aria-label={videoPrimaryLabel}
               >
                 <span className="record-btn-outer">
-                  <span className="record-btn-inner" />
+                  <span className="record-btn-inner">
+                    <svg width="22" height="16" viewBox="0 0 22 16" fill="none" className="record-icon">
+                      <rect x="1" y="1.5" width="14" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M15 6l5.5-3v10L15 10V6Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                 </span>
               </button>
             )}

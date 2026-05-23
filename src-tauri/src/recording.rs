@@ -130,6 +130,13 @@ impl RecordingState {
         snapshot_from_inner(&guard)
     }
 
+    pub fn is_recording(&self) -> bool {
+        self.inner
+            .lock()
+            .map(|guard| guard.session.is_some())
+            .unwrap_or(false)
+    }
+
     pub fn start(&self, app: &AppHandle, config: RecordingConfig) -> Result<RecordingStatus, String> {
         let path = build_output_path()?;
         let session = RecordingSession::start(path.clone(), config)?;
