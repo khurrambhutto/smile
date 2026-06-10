@@ -27,5 +27,8 @@ dist-ssr
 native/build/
 native/qtcam/
 native/webcamoid/
+native/_CPack_Packages/
+native/*.deb
+native/*.rpm
 native/**/*.user
 native/**/.cache/
