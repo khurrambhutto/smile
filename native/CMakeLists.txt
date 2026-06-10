@@ -108,6 +108,26 @@ set_tests_properties(smile_core_tests PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
+qt_add_executable(smile_device_smoke
+    tests/device_smoke.cpp
+    src/camera/CameraDevice.cpp
+    src/camera/CameraFormat.cpp
+    src/camera/DeviceManager.cpp
+    src/camera/FrameBuffer.cpp
+    src/camera/FrameConverter.cpp
+    src/camera/V4L2CaptureSession.cpp
+    src/capture/ImageCaptureHandler.cpp
+    src/capture/VideoRecorder.cpp
+    src/capture/EncoderSettings.cpp
+)
+
+target_include_directories(smile_device_smoke PRIVATE src)
+target_link_libraries(smile_device_smoke PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Multimedia
+)
+
 set(CPACK_PACKAGE_NAME "smile")
 set(CPACK_PACKAGE_VENDOR "Khurram Bhutto")
 set(CPACK_PACKAGE_CONTACT "khurrambhutto")
