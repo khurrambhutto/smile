@@ -284,6 +284,15 @@ ApplicationWindow {
         }
     }
 
+    RecordingIndicator {
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 18
+        recording: cameraManager.recording
+        durationText: cameraManager.recordingDurationText
+        z: 10
+    }
+
     Label {
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
@@ -291,12 +300,12 @@ ApplicationWindow {
         padding: 10
         leftPadding: 16
         rightPadding: 16
-        text: cameraManager.recording ? qsTr("Recording") : cameraManager.statusMessage
+        text: cameraManager.statusMessage
         color: "white"
-        visible: text.length > 0
+        visible: !cameraManager.recording && text.length > 0
         background: Rectangle {
             radius: 16
-            color: cameraManager.recording ? "#ccad1720" : "#99000000"
+            color: "#99000000"
             border.color: "#33ffffff"
         }
     }

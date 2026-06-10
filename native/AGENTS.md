@@ -322,8 +322,32 @@ Updated Phase 2 next steps:
 
 ---
 
-**Current Phase**: Phase 2 (Basic Image Capture - High Quality + Speed)
+## Phase 3 / Product MVP Progress
+
+The native Qt/QML path is now the active implementation direction for this repo.
+
+Implemented after the initial Phase 2 baseline:
+
+- `native/` source and docs are tracked in git; generated build output and local competitor research clones are ignored.
+- Photo Booth-inspired bottom controls replace the earlier utility-style surface.
+- The preview is mirrored only in QML for a familiar selfie feel; saved photos and videos use the non-mirrored camera frame.
+- Capture mode supports photo and video.
+- Effects support Natural, background blur, black-and-white, and comic.
+- High-quality still capture temporarily switches to the best available camera format, skips warm-up frames, saves JPEG quality 95, then restarts preview.
+- `VideoRecorder` now records MP4/H.264 through `ffmpeg`, with PulseAudio microphone input and AAC audio.
+- `EncoderSettings` stores recording resolution, frame rate, bitrate, JPEG pipe quality, CRF, video codec, audio codec, and audio input.
+- Recording duration is exposed to QML for the visible REC indicator.
+- `/dev` is watched for hotplug events and debounced into camera refreshes.
+- CPack emits DEB/RPM packages and installs desktop/appstream metadata.
+- `smile_core_tests` covers format preference and filter output validity with `QT_QPA_PLATFORM=offscreen`.
+
+Known validation boundary:
+
+- Build, headless runtime startup, tests, ffmpeg availability, and DEB packaging have been verified locally.
+- Real webcam and microphone recording still need hands-on validation on the target Ubuntu desktop because sandboxed runs cannot exercise physical camera/audio devices reliably.
+
+**Current Phase**: Product MVP hardening
 
 ---
 
-*Last Updated*: June 5, 2026
+*Last Updated*: June 10, 2026

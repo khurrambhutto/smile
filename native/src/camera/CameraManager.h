@@ -28,6 +28,7 @@ class CameraManager : public QObject
     Q_PROPERTY(bool recording READ isRecording NOTIFY recordingChanged)
     Q_PROPERTY(int captureMode READ captureMode WRITE setCaptureMode NOTIFY captureModeChanged)
     Q_PROPERTY(int filterMode READ filterMode WRITE setFilterMode NOTIFY filterModeChanged)
+    Q_PROPERTY(QString recordingDurationText READ recordingDurationText NOTIFY recordingDurationTextChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString lastPhotoPath READ lastPhotoPath NOTIFY lastPhotoPathChanged)
@@ -55,6 +56,7 @@ public:
     void setCaptureMode(int mode);
     int filterMode() const;
     void setFilterMode(int mode);
+    QString recordingDurationText() const;
     QString errorMessage() const;
     QString statusMessage() const;
     QString lastPhotoPath() const;
@@ -76,6 +78,7 @@ signals:
     void recordingChanged();
     void captureModeChanged();
     void filterModeChanged();
+    void recordingDurationTextChanged();
     void errorMessageChanged();
     void statusMessageChanged();
     void lastPhotoPathChanged();
@@ -88,6 +91,7 @@ private slots:
     void handleStreamingStopped();
     void handlePhotoSaved(const QString &filePath);
     void scheduleDeviceRefresh();
+    void updateRecordingDuration();
 
 private:
     CameraDevice selectedDevice() const;
@@ -110,8 +114,10 @@ private:
     V4L2CaptureSession *m_captureSession = nullptr;
     QPointer<QVideoSink> m_videoSink;
     QElapsedTimer m_frameClock;
+    QElapsedTimer m_recordingClock;
     QFileSystemWatcher m_deviceWatcher;
     QTimer m_hotplugRefreshTimer;
+    QTimer m_recordingDurationTimer;
 
     int m_selectedDeviceIndex = -1;
     int m_selectedFormatIndex = -1;
@@ -122,4 +128,5 @@ private:
     QString m_statusMessage;
     QString m_lastPhotoPath;
     QString m_lastVideoPath;
+    QString m_recordingDurationText = QStringLiteral("00:00");
 };

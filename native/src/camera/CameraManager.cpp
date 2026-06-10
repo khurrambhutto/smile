@@ -44,6 +44,9 @@ CameraManager::CameraManager(QObject *parent)
         connect(&m_deviceWatcher, &QFileSystemWatcher::directoryChanged, this, &CameraManager::scheduleDeviceRefresh);
     }
 
+    m_recordingDurationTimer.setInterval(250);
+    connect(&m_recordingDurationTimer, &QTimer::timeout, this, &CameraManager::updateRecordingDuration);
+
     m_captureThread.start();
 
     refreshDevices();
@@ -182,6 +185,11 @@ void CameraManager::setFilterMode(int mode)
 
     m_filterMode = normalizedMode;
     emit filterModeChanged();
+}
+
+QString CameraManager::recordingDurationText() const
+{
+    return m_recordingDurationText;
 }
 
 QString CameraManager::errorMessage() const
@@ -339,6 +347,9 @@ void CameraManager::startRecording()
 
     m_lastVideoPath = m_recorder.outputPath();
     emit lastVideoPathChanged();
+    m_recordingClock.restart();
+    updateRecordingDuration();
+    m_recordingDurationTimer.start();
     setCaptureMode(1);
     setStatusMessage(QStringLiteral("Recording video…"));
 }
@@ -351,6 +362,9 @@ void CameraManager::stopRecording()
         setErrorMessage(error);
         return;
     }
+
+    m_recordingDurationTimer.stop();
+    updateRecordingDuration();
 
     if (!outputPath.isEmpty()) {
         m_lastVideoPath = outputPath;
@@ -424,6 +438,22 @@ void CameraManager::handlePhotoSaved(const QString &filePath)
 void CameraManager::scheduleDeviceRefresh()
 {
     m_hotplugRefreshTimer.start();
+}
+
+void CameraManager::updateRecordingDuration()
+{
+    const qint64 elapsedMs = m_recordingClock.isValid() ? m_recordingClock.elapsed() : 0;
+    const int elapsedSeconds = int(elapsedMs / 1000);
+    const QString text = QStringLiteral("%1:%2")
+        .arg(elapsedSeconds / 60, 2, 10, QLatin1Char('0'))
+        .arg(elapsedSeconds % 60, 2, 10, QLatin1Char('0'));
+
+    if (m_recordingDurationText == text) {
+        return;
+    }
+
+    m_recordingDurationText = text;
+    emit recordingDurationTextChanged();
 }
 
 CameraDevice CameraManager::selectedDevice() const
