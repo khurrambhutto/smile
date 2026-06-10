@@ -53,15 +53,46 @@ bool VideoRecorder::start(const EncoderSettings &settings, QString *errorMessage
 
     m_settings = settings;
     setOutputPath(createDefaultVideoPath());
-    QDir().mkpath(QFileInfo(m_outputPath).absolutePath());
 
-    m_process.setProgram(QStringLiteral("ffmpeg"));
+    const QString ffmpegPath = QStandardPaths::findExecutable(QStringLiteral("ffmpeg"));
+    if (ffmpegPath.isEmpty()) {
+        const QString message = QStringLiteral("Could not find ffmpeg. Install ffmpeg to record MP4 video.");
+        setErrorMessage(message);
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+        return false;
+    }
+
+    const QFileInfo outputInfo(m_outputPath);
+    if (!QDir().mkpath(outputInfo.absolutePath())) {
+        const QString message = QStringLiteral("Could not create recording directory: %1").arg(outputInfo.absolutePath());
+        setErrorMessage(message);
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+        return false;
+    }
+
+    m_process.setProgram(ffmpegPath);
     m_process.setArguments(buildFfmpegArguments(settings));
     m_process.setProcessChannelMode(QProcess::SeparateChannels);
     m_process.start(QIODevice::WriteOnly);
 
     if (!m_process.waitForStarted(2500)) {
         const QString message = QStringLiteral("Could not start ffmpeg for MP4 recording: %1").arg(m_process.errorString());
+        setErrorMessage(message);
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+        return false;
+    }
+
+    if (m_process.waitForFinished(350)) {
+        const QString details = QString::fromLocal8Bit(m_process.readAllStandardError()).trimmed();
+        const QString message = details.isEmpty()
+            ? QStringLiteral("ffmpeg ended before recording could start.")
+            : QStringLiteral("ffmpeg could not start recording: %1").arg(details);
         setErrorMessage(message);
         if (errorMessage) {
             *errorMessage = message;
@@ -193,16 +224,22 @@ QStringList VideoRecorder::buildFfmpegArguments(const EncoderSettings &settings)
         QString::number(std::max(1, settings.framesPerSecond)),
         QStringLiteral("-i"),
         QStringLiteral("-"),
+        QStringLiteral("-thread_queue_size"),
+        QStringLiteral("512"),
         QStringLiteral("-f"),
         QStringLiteral("pulse"),
         QStringLiteral("-i"),
         settings.audioInput,
+        QStringLiteral("-fflags"),
+        QStringLiteral("+genpts"),
         QStringLiteral("-c:v"),
         settings.videoCodec,
         QStringLiteral("-preset"),
         QStringLiteral("veryfast"),
         QStringLiteral("-crf"),
         QString::number(settings.crf),
+        QStringLiteral("-b:v"),
+        QString::number(std::max(1, settings.videoBitrate)),
         QStringLiteral("-pix_fmt"),
         QStringLiteral("yuv420p"),
         QStringLiteral("-c:a"),

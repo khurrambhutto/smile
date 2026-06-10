@@ -33,6 +33,8 @@ class CameraManager : public QObject
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString lastPhotoPath READ lastPhotoPath NOTIFY lastPhotoPathChanged)
     Q_PROPERTY(QString lastVideoPath READ lastVideoPath NOTIFY lastVideoPathChanged)
+    Q_PROPERTY(QString lastCapturePath READ lastCapturePath NOTIFY lastCaptureChanged)
+    Q_PROPERTY(QString lastCaptureKind READ lastCaptureKind NOTIFY lastCaptureChanged)
 
 public:
     explicit CameraManager(QObject *parent = nullptr);
@@ -61,6 +63,8 @@ public:
     QString statusMessage() const;
     QString lastPhotoPath() const;
     QString lastVideoPath() const;
+    QString lastCapturePath() const;
+    QString lastCaptureKind() const;
 
     Q_INVOKABLE void refreshDevices();
     Q_INVOKABLE void start();
@@ -69,6 +73,7 @@ public:
     Q_INVOKABLE void toggleRecording();
     Q_INVOKABLE void startRecording();
     Q_INVOKABLE void stopRecording();
+    Q_INVOKABLE void openLastCapture();
 
 signals:
     void videoSinkChanged();
@@ -83,6 +88,7 @@ signals:
     void statusMessageChanged();
     void lastPhotoPathChanged();
     void lastVideoPathChanged();
+    void lastCaptureChanged();
 
 private slots:
     void presentFrame(const QImage &image);
@@ -101,6 +107,7 @@ private:
     void setStreaming(bool streaming);
     void setErrorMessage(const QString &message);
     void setStatusMessage(const QString &message);
+    void setLastCapture(const QString &path, const QString &kind);
     void clearError();
 
     DeviceManager m_deviceManager;
@@ -128,5 +135,7 @@ private:
     QString m_statusMessage;
     QString m_lastPhotoPath;
     QString m_lastVideoPath;
+    QString m_lastCapturePath;
+    QString m_lastCaptureKind;
     QString m_recordingDurationText = QStringLiteral("00:00");
 };

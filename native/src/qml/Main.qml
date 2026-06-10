@@ -28,6 +28,12 @@ ApplicationWindow {
         readonly property color glass: dark ? "#cc17191f" : "#ddffffff"
     }
 
+    function fileName(path) {
+        var normalized = String(path)
+        var index = normalized.lastIndexOf("/")
+        return index >= 0 ? normalized.slice(index + 1) : normalized
+    }
+
     Component.onCompleted: cameraManager.start()
     onClosing: cameraManager.stop()
 
@@ -77,6 +83,33 @@ ApplicationWindow {
         anchors.bottom: parent.bottom
         anchors.margins: 22
         spacing: 14
+
+        Button {
+            id: lastCaptureButton
+            visible: cameraManager.lastCapturePath.length > 0
+            Layout.alignment: Qt.AlignHCenter
+            Layout.maximumWidth: Math.min(root.width - 72, 520)
+            Layout.preferredHeight: 42
+            text: cameraManager.lastCaptureKind + " saved • " + root.fileName(cameraManager.lastCapturePath)
+            onClicked: cameraManager.openLastCapture()
+
+            background: Rectangle {
+                radius: 15
+                color: theme.glass
+                border.color: theme.border
+                border.width: 1
+            }
+
+            contentItem: Text {
+                text: lastCaptureButton.text
+                color: theme.text
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                elide: Text.ElideMiddle
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
 
         RowLayout {
             visible: effectsOpen.checked

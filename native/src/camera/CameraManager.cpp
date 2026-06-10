@@ -3,8 +3,10 @@
 #include "FrameConverter.h"
 #include "V4L2CaptureSession.h"
 
+#include <QDesktopServices>
 #include <QImage>
 #include <QMetaObject>
+#include <QUrl>
 #include <QVideoFrame>
 #include <QVideoFrameFormat>
 #include <QVideoSink>
@@ -212,6 +214,16 @@ QString CameraManager::lastVideoPath() const
     return m_lastVideoPath;
 }
 
+QString CameraManager::lastCapturePath() const
+{
+    return m_lastCapturePath;
+}
+
+QString CameraManager::lastCaptureKind() const
+{
+    return m_lastCaptureKind;
+}
+
 void CameraManager::refreshDevices()
 {
     const bool shouldRestart = m_streaming;
@@ -369,8 +381,18 @@ void CameraManager::stopRecording()
     if (!outputPath.isEmpty()) {
         m_lastVideoPath = outputPath;
         emit lastVideoPathChanged();
+        setLastCapture(outputPath, QStringLiteral("Video"));
         setStatusMessage(QStringLiteral("Video saved: %1").arg(outputPath));
     }
+}
+
+void CameraManager::openLastCapture()
+{
+    if (m_lastCapturePath.isEmpty()) {
+        return;
+    }
+
+    QDesktopServices::openUrl(QUrl::fromLocalFile(m_lastCapturePath));
 }
 
 void CameraManager::presentFrame(const QImage &image)
@@ -432,6 +454,7 @@ void CameraManager::handlePhotoSaved(const QString &filePath)
 
     m_lastPhotoPath = filePath;
     emit lastPhotoPathChanged();
+    setLastCapture(filePath, QStringLiteral("Photo"));
     setStatusMessage(QStringLiteral("Photo saved: %1").arg(filePath));
 }
 
@@ -541,6 +564,17 @@ void CameraManager::setStatusMessage(const QString &message)
 
     m_statusMessage = message;
     emit statusMessageChanged();
+}
+
+void CameraManager::setLastCapture(const QString &path, const QString &kind)
+{
+    if (m_lastCapturePath == path && m_lastCaptureKind == kind) {
+        return;
+    }
+
+    m_lastCapturePath = path;
+    m_lastCaptureKind = kind;
+    emit lastCaptureChanged();
 }
 
 void CameraManager::clearError()
