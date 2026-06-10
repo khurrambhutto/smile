@@ -43,7 +43,7 @@ private:
     QProcess m_process;
     EncoderSettings m_settings;
     QElapsedTimer m_frameClock;
-    qint64 m_lastFrameTimeMs = -1;
+    qint64 m_nextFrameTimeMs = -1;
     bool m_recording = false;
     QString m_outputPath;
     QString m_errorMessage;

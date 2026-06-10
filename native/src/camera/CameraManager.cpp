@@ -382,7 +382,7 @@ void CameraManager::stopRecording()
         m_lastVideoPath = outputPath;
         emit lastVideoPathChanged();
         setLastCapture(outputPath, QStringLiteral("Video"));
-        setStatusMessage(QStringLiteral("Video saved: %1").arg(outputPath));
+        setStatusMessage(QStringLiteral("Video saved"));
     }
 }
 
@@ -402,7 +402,7 @@ void CameraManager::presentFrame(const QImage &image)
     }
 
     const QImage filteredImage = FrameConverter::applyFilter(image, m_filterMode);
-    m_recorder.writeFrame(filteredImage);
+    m_recorder.writeFrame(filteredImage.mirrored(true, false));
 
     const QImage rgbaImage = filteredImage.convertToFormat(QImage::Format_RGBA8888);
     QVideoFrameFormat frameFormat(rgbaImage.size(), QVideoFrameFormat::Format_RGBA8888);
@@ -455,7 +455,7 @@ void CameraManager::handlePhotoSaved(const QString &filePath)
     m_lastPhotoPath = filePath;
     emit lastPhotoPathChanged();
     setLastCapture(filePath, QStringLiteral("Photo"));
-    setStatusMessage(QStringLiteral("Photo saved: %1").arg(filePath));
+    setStatusMessage(QStringLiteral("Photo saved"));
 }
 
 void CameraManager::scheduleDeviceRefresh()

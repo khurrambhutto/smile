@@ -101,7 +101,7 @@ bool VideoRecorder::start(const EncoderSettings &settings, QString *errorMessage
     }
 
     m_frameClock.restart();
-    m_lastFrameTimeMs = -1;
+    m_nextFrameTimeMs = -1;
     setErrorMessage(QString());
     setRecording(true);
     return true;
@@ -143,7 +143,9 @@ void VideoRecorder::writeFrame(const QImage &image)
 
     const qint64 now = m_frameClock.elapsed();
     const qint64 frameIntervalMs = 1000 / std::max(1, m_settings.framesPerSecond);
-    if (m_lastFrameTimeMs >= 0 && now - m_lastFrameTimeMs < frameIntervalMs) {
+    if (m_nextFrameTimeMs < 0) {
+        m_nextFrameTimeMs = now;
+    } else if (now < m_nextFrameTimeMs) {
         return;
     }
 
@@ -155,12 +157,16 @@ void VideoRecorder::writeFrame(const QImage &image)
         return;
     }
 
-    if (m_process.write(jpeg) == -1) {
-        setErrorMessage(QStringLiteral("Could not write a video frame to ffmpeg."));
-        return;
-    }
+    int framesWritten = 0;
+    while (m_nextFrameTimeMs <= now && framesWritten < 8) {
+        if (m_process.write(jpeg) == -1) {
+            setErrorMessage(QStringLiteral("Could not write a video frame to ffmpeg."));
+            return;
+        }
 
-    m_lastFrameTimeMs = now;
+        m_nextFrameTimeMs += frameIntervalMs;
+        ++framesWritten;
+    }
 }
 
 QString VideoRecorder::defaultRecordingDirectory()

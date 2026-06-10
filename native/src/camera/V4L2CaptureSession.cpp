@@ -153,7 +153,7 @@ void V4L2CaptureSession::captureHighQualityPhoto(const QString &devicePath, cons
         return;
     }
 
-    image = FrameConverter::applyFilter(image, filterMode);
+    image = FrameConverter::applyFilter(image.mirrored(true, false), filterMode);
     const QString targetPath = filePath.isEmpty()
         ? ImageCaptureHandler::createDefaultImagePath()
         : filePath;
