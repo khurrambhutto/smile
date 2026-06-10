@@ -2,6 +2,7 @@
 
 #include "DeviceManager.h"
 #include "app/SettingsStore.h"
+#include "capture/VideoRecorder.h"
 #include "models/CameraDeviceModel.h"
 #include "models/CameraFormatModel.h"
 
@@ -22,9 +23,13 @@ class CameraManager : public QObject
     Q_PROPERTY(int selectedDeviceIndex READ selectedDeviceIndex WRITE setSelectedDeviceIndex NOTIFY selectedDeviceIndexChanged)
     Q_PROPERTY(int selectedFormatIndex READ selectedFormatIndex WRITE setSelectedFormatIndex NOTIFY selectedFormatIndexChanged)
     Q_PROPERTY(bool streaming READ isStreaming NOTIFY streamingChanged)
+    Q_PROPERTY(bool recording READ isRecording NOTIFY recordingChanged)
+    Q_PROPERTY(int captureMode READ captureMode WRITE setCaptureMode NOTIFY captureModeChanged)
+    Q_PROPERTY(int filterMode READ filterMode WRITE setFilterMode NOTIFY filterModeChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString lastPhotoPath READ lastPhotoPath NOTIFY lastPhotoPathChanged)
+    Q_PROPERTY(QString lastVideoPath READ lastVideoPath NOTIFY lastVideoPathChanged)
 
 public:
     explicit CameraManager(QObject *parent = nullptr);
@@ -43,23 +48,36 @@ public:
     void setSelectedFormatIndex(int index);
 
     bool isStreaming() const;
+    bool isRecording() const;
+    int captureMode() const;
+    void setCaptureMode(int mode);
+    int filterMode() const;
+    void setFilterMode(int mode);
     QString errorMessage() const;
     QString statusMessage() const;
     QString lastPhotoPath() const;
+    QString lastVideoPath() const;
 
     Q_INVOKABLE void refreshDevices();
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
     Q_INVOKABLE void capturePhoto();
+    Q_INVOKABLE void toggleRecording();
+    Q_INVOKABLE void startRecording();
+    Q_INVOKABLE void stopRecording();
 
 signals:
     void videoSinkChanged();
     void selectedDeviceIndexChanged();
     void selectedFormatIndexChanged();
     void streamingChanged();
+    void recordingChanged();
+    void captureModeChanged();
+    void filterModeChanged();
     void errorMessageChanged();
     void statusMessageChanged();
     void lastPhotoPathChanged();
+    void lastVideoPathChanged();
 
 private slots:
     void presentFrame(const QImage &image);
@@ -71,6 +89,7 @@ private slots:
 private:
     CameraDevice selectedDevice() const;
     CameraFormat selectedFormat() const;
+    CameraFormat bestPhotoFormat() const;
     void updateFormatsForSelectedDevice();
     void setStreaming(bool streaming);
     void setErrorMessage(const QString &message);
@@ -81,6 +100,7 @@ private:
     SettingsStore m_settingsStore;
     CameraDeviceModel m_deviceModel;
     CameraFormatModel m_formatModel;
+    VideoRecorder m_recorder;
     QList<CameraDevice> m_devices;
 
     QThread m_captureThread;
@@ -90,8 +110,11 @@ private:
 
     int m_selectedDeviceIndex = -1;
     int m_selectedFormatIndex = -1;
+    int m_captureMode = 0;
+    int m_filterMode = 0;
     bool m_streaming = false;
     QString m_errorMessage;
     QString m_statusMessage;
     QString m_lastPhotoPath;
+    QString m_lastVideoPath;
 };

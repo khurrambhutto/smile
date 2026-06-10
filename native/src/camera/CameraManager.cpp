@@ -1,5 +1,6 @@
 #include "CameraManager.h"
 
+#include "FrameConverter.h"
 #include "V4L2CaptureSession.h"
 
 #include <QImage>
@@ -29,6 +30,12 @@ CameraManager::CameraManager(QObject *parent)
     connect(m_captureSession, &V4L2CaptureSession::streamingStarted, this, &CameraManager::handleStreamingStarted);
     connect(m_captureSession, &V4L2CaptureSession::streamingStopped, this, &CameraManager::handleStreamingStopped);
     connect(m_captureSession, &V4L2CaptureSession::photoSaved, this, &CameraManager::handlePhotoSaved);
+    connect(&m_recorder, &VideoRecorder::recordingChanged, this, &CameraManager::recordingChanged);
+    connect(&m_recorder, &VideoRecorder::errorMessageChanged, this, [this]() {
+        if (!m_recorder.errorMessage().isEmpty()) {
+            setErrorMessage(m_recorder.errorMessage());
+        }
+    });
     m_captureThread.start();
 
     refreshDevices();
@@ -132,6 +139,43 @@ bool CameraManager::isStreaming() const
     return m_streaming;
 }
 
+bool CameraManager::isRecording() const
+{
+    return m_recorder.isRecording();
+}
+
+int CameraManager::captureMode() const
+{
+    return m_captureMode;
+}
+
+void CameraManager::setCaptureMode(int mode)
+{
+    const int normalizedMode = mode == 1 ? 1 : 0;
+    if (m_captureMode == normalizedMode) {
+        return;
+    }
+
+    m_captureMode = normalizedMode;
+    emit captureModeChanged();
+}
+
+int CameraManager::filterMode() const
+{
+    return m_filterMode;
+}
+
+void CameraManager::setFilterMode(int mode)
+{
+    const int normalizedMode = std::clamp(mode, 0, 3);
+    if (m_filterMode == normalizedMode) {
+        return;
+    }
+
+    m_filterMode = normalizedMode;
+    emit filterModeChanged();
+}
+
 QString CameraManager::errorMessage() const
 {
     return m_errorMessage;
@@ -145,6 +189,11 @@ QString CameraManager::statusMessage() const
 QString CameraManager::lastPhotoPath() const
 {
     return m_lastPhotoPath;
+}
+
+QString CameraManager::lastVideoPath() const
+{
+    return m_lastVideoPath;
 }
 
 void CameraManager::refreshDevices()
@@ -220,6 +269,9 @@ void CameraManager::start()
 
 void CameraManager::stop()
 {
+    if (m_recorder.isRecording()) {
+        stopRecording();
+    }
     QMetaObject::invokeMethod(m_captureSession, &V4L2CaptureSession::stop, Qt::QueuedConnection);
     setStreaming(false);
     setStatusMessage(QStringLiteral("Preview stopped"));
@@ -232,9 +284,71 @@ void CameraManager::capturePhoto()
         return;
     }
 
-    QMetaObject::invokeMethod(m_captureSession, [session = m_captureSession]() {
-        session->captureCurrentFrame(QString());
+    const CameraDevice device = selectedDevice();
+    const CameraFormat previewFormat = selectedFormat();
+    const CameraFormat photoFormat = bestPhotoFormat();
+    if (!device.isValid() || !photoFormat.isValid()) {
+        setErrorMessage(QStringLiteral("No high-quality photo format is available."));
+        return;
+    }
+
+    setStatusMessage(QStringLiteral("Capturing full-quality photo…"));
+    QMetaObject::invokeMethod(m_captureSession, [session = m_captureSession, path = device.path, photoFormat, previewFormat, filterMode = m_filterMode]() {
+        session->captureHighQualityPhoto(path, photoFormat, QString(), filterMode);
+        if (previewFormat.isValid()) {
+            session->start(path, previewFormat);
+        }
     }, Qt::QueuedConnection);
+}
+
+void CameraManager::toggleRecording()
+{
+    if (m_recorder.isRecording()) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+void CameraManager::startRecording()
+{
+    if (!m_streaming) {
+        setErrorMessage(QStringLiteral("Start the camera before recording video."));
+        return;
+    }
+
+    const CameraFormat format = selectedFormat();
+    EncoderSettings settings;
+    settings.width = format.width;
+    settings.height = format.height;
+    settings.framesPerSecond = std::max(1, format.framesPerSecond);
+
+    QString error;
+    if (!m_recorder.start(settings, &error)) {
+        setErrorMessage(error);
+        return;
+    }
+
+    m_lastVideoPath = m_recorder.outputPath();
+    emit lastVideoPathChanged();
+    setCaptureMode(1);
+    setStatusMessage(QStringLiteral("Recording video…"));
+}
+
+void CameraManager::stopRecording()
+{
+    QString error;
+    const QString outputPath = m_recorder.outputPath();
+    if (!m_recorder.stop(&error)) {
+        setErrorMessage(error);
+        return;
+    }
+
+    if (!outputPath.isEmpty()) {
+        m_lastVideoPath = outputPath;
+        emit lastVideoPathChanged();
+        setStatusMessage(QStringLiteral("Video saved: %1").arg(outputPath));
+    }
 }
 
 void CameraManager::presentFrame(const QImage &image)
@@ -243,7 +357,10 @@ void CameraManager::presentFrame(const QImage &image)
         return;
     }
 
-    const QImage rgbaImage = image.convertToFormat(QImage::Format_RGBA8888);
+    const QImage filteredImage = FrameConverter::applyFilter(image, m_filterMode);
+    m_recorder.writeFrame(filteredImage);
+
+    const QImage rgbaImage = filteredImage.convertToFormat(QImage::Format_RGBA8888);
     QVideoFrameFormat frameFormat(rgbaImage.size(), QVideoFrameFormat::Format_RGBA8888);
     frameFormat.setScanLineDirection(QVideoFrameFormat::TopToBottom);
 
@@ -307,6 +424,27 @@ CameraDevice CameraManager::selectedDevice() const
 CameraFormat CameraManager::selectedFormat() const
 {
     return m_formatModel.formatAt(m_selectedFormatIndex);
+}
+
+CameraFormat CameraManager::bestPhotoFormat() const
+{
+    if (m_selectedDeviceIndex < 0 || m_selectedDeviceIndex >= m_devices.size()) {
+        return {};
+    }
+
+    const QList<CameraFormat> formats = m_devices.at(m_selectedDeviceIndex).formats;
+    if (formats.isEmpty()) {
+        return {};
+    }
+
+    return *std::max_element(formats.begin(), formats.end(), [](const CameraFormat &left, const CameraFormat &right) {
+        const qint64 leftPixels = qint64(left.width) * qint64(left.height);
+        const qint64 rightPixels = qint64(right.width) * qint64(right.height);
+        if (leftPixels != rightPixels) {
+            return leftPixels < rightPixels;
+        }
+        return left.preferenceScore() < right.preferenceScore();
+    });
 }
 
 void CameraManager::updateFormatsForSelectedDevice()

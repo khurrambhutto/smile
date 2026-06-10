@@ -6,6 +6,7 @@ Item {
     id: root
 
     property var manager
+    property bool mirrorPreview: false
 
     Rectangle {
         anchors.fill: parent
@@ -16,6 +17,10 @@ Item {
         id: output
         anchors.fill: parent
         fillMode: VideoOutput.PreserveAspectCrop
+        transform: Scale {
+            origin.x: output.width / 2
+            xScale: root.mirrorPreview ? -1 : 1
+        }
 
         Component.onCompleted: {
             if (root.manager)

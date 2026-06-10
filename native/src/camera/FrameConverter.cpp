@@ -1,5 +1,7 @@
 #include "FrameConverter.h"
 
+#include <QPainter>
+#include <QRadialGradient>
 #include <algorithm>
 
 namespace {
@@ -49,6 +51,110 @@ QImage FrameConverter::toImage(quint32 pixelFormat, int width, int height, QByte
     }
 
     return {};
+}
+
+QImage FrameConverter::applyFilter(const QImage &image, int filterMode)
+{
+    if (image.isNull()) {
+        return {};
+    }
+
+    switch (filterMode) {
+    case BackgroundBlur:
+        return applyBackgroundBlur(image);
+    case BlackAndWhite:
+        return applyBlackAndWhite(image);
+    case Comic:
+        return applyComic(image);
+    case Natural:
+    default:
+        return image;
+    }
+}
+
+QImage FrameConverter::applyBackgroundBlur(const QImage &image)
+{
+    const QImage source = image.convertToFormat(QImage::Format_ARGB32);
+    if (source.isNull()) {
+        return {};
+    }
+
+    const QSize blurSize(
+        std::max(24, source.width() / 18),
+        std::max(24, source.height() / 18));
+    QImage blurred = source
+        .scaled(blurSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+        .scaled(source.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    QImage result = blurred.convertToFormat(QImage::Format_ARGB32);
+    QImage mask(source.size(), QImage::Format_ARGB32_Premultiplied);
+    mask.fill(Qt::transparent);
+
+    QPainter maskPainter(&mask);
+    maskPainter.setRenderHint(QPainter::Antialiasing);
+    QRadialGradient gradient(QPointF(source.width() * 0.5, source.height() * 0.45), source.width() * 0.42);
+    gradient.setColorAt(0.0, QColor(255, 255, 255, 255));
+    gradient.setColorAt(0.72, QColor(255, 255, 255, 230));
+    gradient.setColorAt(1.0, QColor(255, 255, 255, 0));
+    maskPainter.setBrush(gradient);
+    maskPainter.setPen(Qt::NoPen);
+    maskPainter.drawEllipse(QPointF(source.width() * 0.5, source.height() * 0.45), source.width() * 0.31, source.height() * 0.43);
+    maskPainter.end();
+
+    QPainter painter(&result);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    painter.drawImage(0, 0, source);
+    painter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+    painter.drawImage(0, 0, mask);
+    painter.setCompositionMode(QPainter::CompositionMode_DestinationOver);
+    painter.drawImage(0, 0, blurred);
+    painter.end();
+
+    return result;
+}
+
+QImage FrameConverter::applyBlackAndWhite(const QImage &image)
+{
+    return image.convertToFormat(QImage::Format_Grayscale8).convertToFormat(QImage::Format_ARGB32);
+}
+
+QImage FrameConverter::applyComic(const QImage &image)
+{
+    const QImage source = image.convertToFormat(QImage::Format_ARGB32);
+    if (source.isNull()) {
+        return {};
+    }
+
+    QImage result(source.size(), QImage::Format_ARGB32);
+
+    for (int y = 0; y < source.height(); ++y) {
+        const QRgb *src = reinterpret_cast<const QRgb *>(source.constScanLine(y));
+        QRgb *dst = reinterpret_cast<QRgb *>(result.scanLine(y));
+
+        for (int x = 0; x < source.width(); ++x) {
+            const QColor color(src[x]);
+            const int r = (color.red() / 48) * 48 + 24;
+            const int g = (color.green() / 48) * 48 + 24;
+            const int b = (color.blue() / 48) * 48 + 24;
+
+            int edge = 0;
+            if (x > 0 && y > 0 && x + 1 < source.width() && y + 1 < source.height()) {
+                const QRgb left = src[x - 1];
+                const QRgb right = src[x + 1];
+                const QRgb up = reinterpret_cast<const QRgb *>(source.constScanLine(y - 1))[x];
+                const QRgb down = reinterpret_cast<const QRgb *>(source.constScanLine(y + 1))[x];
+                edge = std::abs(qGray(left) - qGray(right)) + std::abs(qGray(up) - qGray(down));
+            }
+
+            if (edge > 72) {
+                dst[x] = qRgb(24, 24, 24);
+            } else {
+                dst[x] = qRgb(clampToByte(r + 12), clampToByte(g + 8), clampToByte(b));
+            }
+        }
+    }
+
+    return result;
 }
 
 QImage FrameConverter::convertYuyvToImage(int width, int height, QByteArrayView frame)

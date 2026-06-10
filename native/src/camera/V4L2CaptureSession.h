@@ -21,6 +21,7 @@ public slots:
     void start(const QString &devicePath, const CameraFormat &format);
     void stop();
     void captureCurrentFrame(const QString &filePath);
+    void captureHighQualityPhoto(const QString &devicePath, const CameraFormat &format, const QString &filePath, int filterMode);
 
 signals:
     void previewFrameReady(const QImage &image);
@@ -36,6 +37,7 @@ private:
     bool configureDevice(const QString &devicePath, const CameraFormat &format);
     bool requestAndMapBuffers();
     bool queueAllBuffers();
+    QImage readStillFrame(int warmupFrames);
     void cleanupDevice();
     void cleanupBuffers();
     void reportErrorAndStop(const QString &message);

@@ -9,6 +9,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <linux/videodev2.h>
+#include <poll.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -17,6 +18,7 @@
 namespace {
 constexpr int requestedBufferCount = 4;
 constexpr int maxFramesPerNotifierActivation = 8;
+constexpr int stillCaptureTimeoutMs = 3000;
 
 int xioctl(int fileDescriptor, unsigned long request, void *arg)
 {
@@ -113,6 +115,51 @@ void V4L2CaptureSession::captureCurrentFrame(const QString &filePath)
 
     QString error;
     if (!ImageCaptureHandler::saveJpeg(m_latestImage, targetPath, &error)) {
+        emit errorOccurred(error);
+        return;
+    }
+
+    emit photoSaved(targetPath);
+}
+
+void V4L2CaptureSession::captureHighQualityPhoto(const QString &devicePath, const CameraFormat &format, const QString &filePath, int filterMode)
+{
+    stop();
+
+    if (!format.isValid()) {
+        emit errorOccurred(QStringLiteral("Cannot capture photo: no valid high-quality format selected."));
+        return;
+    }
+
+    if (!configureDevice(devicePath, format) || !requestAndMapBuffers() || !queueAllBuffers()) {
+        cleanupDevice();
+        return;
+    }
+
+    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (xioctl(m_fileDescriptor, VIDIOC_STREAMON, &type) == -1) {
+        emit errorOccurred(systemError(QStringLiteral("Could not start high-quality photo capture")));
+        cleanupDevice();
+        return;
+    }
+
+    QImage image = readStillFrame(5);
+
+    xioctl(m_fileDescriptor, VIDIOC_STREAMOFF, &type);
+    cleanupDevice();
+
+    if (image.isNull()) {
+        emit errorOccurred(QStringLiteral("Camera did not produce a high-quality photo frame."));
+        return;
+    }
+
+    image = FrameConverter::applyFilter(image, filterMode);
+    const QString targetPath = filePath.isEmpty()
+        ? ImageCaptureHandler::createDefaultImagePath()
+        : filePath;
+
+    QString error;
+    if (!ImageCaptureHandler::saveJpeg(image, targetPath, &error)) {
         emit errorOccurred(error);
         return;
     }
@@ -269,6 +316,57 @@ bool V4L2CaptureSession::queueAllBuffers()
     }
 
     return true;
+}
+
+QImage V4L2CaptureSession::readStillFrame(int warmupFrames)
+{
+    QImage newestImage;
+    int acceptedFrames = 0;
+
+    while (acceptedFrames <= warmupFrames) {
+        pollfd descriptor {};
+        descriptor.fd = m_fileDescriptor;
+        descriptor.events = POLLIN;
+
+        const int ready = poll(&descriptor, 1, stillCaptureTimeoutMs);
+        if (ready <= 0) {
+            return newestImage;
+        }
+
+        v4l2_buffer buffer {};
+        buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buffer.memory = V4L2_MEMORY_MMAP;
+
+        if (xioctl(m_fileDescriptor, VIDIOC_DQBUF, &buffer) == -1) {
+            if (errno == EAGAIN) {
+                continue;
+            }
+            emit errorOccurred(systemError(QStringLiteral("Could not read high-quality photo frame")));
+            return {};
+        }
+
+        if (buffer.index >= quint32(m_buffers.size())) {
+            emit errorOccurred(QStringLiteral("Camera returned an invalid still frame buffer index."));
+            return {};
+        }
+
+        const FrameBuffer &mappedBuffer = m_buffers[int(buffer.index)];
+        if (buffer.bytesused > 0 && buffer.bytesused <= mappedBuffer.length) {
+            const QByteArrayView frameBytes(static_cast<const char *>(mappedBuffer.start), qsizetype(buffer.bytesused));
+            QImage image = FrameConverter::toImage(m_activeFormat.pixelFormat, m_activeFormat.width, m_activeFormat.height, frameBytes);
+            if (!image.isNull()) {
+                newestImage = std::move(image);
+                ++acceptedFrames;
+            }
+        }
+
+        if (xioctl(m_fileDescriptor, VIDIOC_QBUF, &buffer) == -1) {
+            emit errorOccurred(systemError(QStringLiteral("Could not requeue high-quality photo buffer")));
+            return {};
+        }
+    }
+
+    return newestImage;
 }
 
 void V4L2CaptureSession::cleanupDevice()
