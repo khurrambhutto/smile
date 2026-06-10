@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.khurrambhutto.Smile</id>
+  <name>Smile</name>
+  <summary>Fast native Linux camera app</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <description>
+    <p>
+      Smile is a native Linux camera app with V4L2 capture, high-quality photos,
+      MP4 video recording, live effects, and a compact Photo Booth-inspired interface.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.khurrambhutto.Smile.desktop</launchable>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Video</category>
+    <category>Photography</category>
+  </categories>
+  <url type="homepage">https://github.com/khurrambhutto/smile</url>
+  <provides>
+    <binary>smile</binary>
+  </provides>
+  <releases>
+    <release version="0.1.0" date="2026-06-10">
+      <description>
+        <p>Native Qt/QML camera app baseline with V4L2 preview and capture.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -7,9 +7,11 @@
 #include "models/CameraFormatModel.h"
 
 #include <QElapsedTimer>
+#include <QFileSystemWatcher>
 #include <QObject>
 #include <QPointer>
 #include <QThread>
+#include <QTimer>
 #include <QVideoSink>
 
 class V4L2CaptureSession;
@@ -85,6 +87,7 @@ private slots:
     void handleStreamingStarted();
     void handleStreamingStopped();
     void handlePhotoSaved(const QString &filePath);
+    void scheduleDeviceRefresh();
 
 private:
     CameraDevice selectedDevice() const;
@@ -107,6 +110,8 @@ private:
     V4L2CaptureSession *m_captureSession = nullptr;
     QPointer<QVideoSink> m_videoSink;
     QElapsedTimer m_frameClock;
+    QFileSystemWatcher m_deviceWatcher;
+    QTimer m_hotplugRefreshTimer;
 
     int m_selectedDeviceIndex = -1;
     int m_selectedFormatIndex = -1;

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Smile
+Comment=Native Linux camera app
+Exec=smile
+Icon=camera-photo
+Terminal=false
+Categories=AudioVideo;Video;Photography;GTK;
+StartupNotify=true
+Keywords=camera;webcam;photo;video;selfie;

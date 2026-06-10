@@ -36,6 +36,14 @@ CameraManager::CameraManager(QObject *parent)
             setErrorMessage(m_recorder.errorMessage());
         }
     });
+
+    m_hotplugRefreshTimer.setSingleShot(true);
+    m_hotplugRefreshTimer.setInterval(600);
+    connect(&m_hotplugRefreshTimer, &QTimer::timeout, this, &CameraManager::refreshDevices);
+    if (m_deviceWatcher.addPath(QStringLiteral("/dev"))) {
+        connect(&m_deviceWatcher, &QFileSystemWatcher::directoryChanged, this, &CameraManager::scheduleDeviceRefresh);
+    }
+
     m_captureThread.start();
 
     refreshDevices();
@@ -411,6 +419,11 @@ void CameraManager::handlePhotoSaved(const QString &filePath)
     m_lastPhotoPath = filePath;
     emit lastPhotoPathChanged();
     setStatusMessage(QStringLiteral("Photo saved: %1").arg(filePath));
+}
+
+void CameraManager::scheduleDeviceRefresh()
+{
+    m_hotplugRefreshTimer.start();
 }
 
 CameraDevice CameraManager::selectedDevice() const
