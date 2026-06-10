@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Native Qt/C++ app build and local research checkouts
+native/build/
+native/qtcam/
+native/webcamoid/
+native/**/*.user
+native/**/.cache/
