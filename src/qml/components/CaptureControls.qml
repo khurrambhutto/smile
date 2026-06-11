@@ -19,14 +19,6 @@ Pane {
         anchors.fill: parent
         spacing: 18
 
-        Label {
-            text: root.manager ? root.manager.statusMessage : ""
-            color: root.manager && root.manager.errorMessage.length > 0 ? "#fca5a5" : "#d7dbe6"
-            elide: Text.ElideMiddle
-            Layout.fillWidth: true
-            font.pixelSize: 14
-        }
-
         Button {
             text: root.manager && root.manager.streaming ? qsTr("Stop Preview") : qsTr("Start Preview")
             enabled: root.manager && root.manager.selectedDeviceIndex >= 0
