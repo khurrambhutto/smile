@@ -68,21 +68,13 @@ Dialog {
 
         Frame {
             Layout.fillWidth: true
-            visible: root.manager && (root.manager.statusMessage.length > 0 || root.manager.lastPhotoPath.length > 0)
+            visible: root.manager && root.manager.lastPhotoPath.length > 0
 
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 8
 
                 Label {
-                    text: root.manager ? root.manager.statusMessage : ""
-                    color: root.manager && root.manager.errorMessage.length > 0 ? "#b91c1c" : "#4b5563"
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    visible: root.manager && root.manager.lastPhotoPath.length > 0
                     text: qsTr("Last photo: %1").arg(root.manager ? root.manager.lastPhotoPath : "")
                     wrapMode: Text.WrapAnywhere
                     color: "#4b5563"

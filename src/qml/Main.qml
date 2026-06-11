@@ -78,33 +78,6 @@ ApplicationWindow {
         anchors.margins: 22
         spacing: 14
 
-        Button {
-            id: lastCaptureButton
-            visible: cameraManager.lastCapturePath.length > 0
-            Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: 220
-            Layout.preferredHeight: 42
-            text: cameraManager.lastCaptureKind + " saved"
-            onClicked: cameraManager.openLastCapture()
-
-            background: Rectangle {
-                radius: 15
-                color: theme.glass
-                border.color: theme.border
-                border.width: 1
-            }
-
-            contentItem: Text {
-                text: lastCaptureButton.text
-                color: theme.text
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
-                elide: Text.ElideMiddle
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-
         RowLayout {
             visible: effectsOpen.checked
             Layout.fillWidth: true
@@ -318,23 +291,6 @@ ApplicationWindow {
         recording: cameraManager.recording
         durationText: cameraManager.recordingDurationText
         z: 10
-    }
-
-    Label {
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: 18
-        padding: 10
-        leftPadding: 16
-        rightPadding: 16
-        text: cameraManager.statusMessage
-        color: "white"
-        visible: !cameraManager.recording && text.length > 0
-        background: Rectangle {
-            radius: 16
-            color: "#99000000"
-            border.color: "#33ffffff"
-        }
     }
 
     Label {
